@@ -1,0 +1,84 @@
+body {
+    font-family: livvic;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#map {
+    width: 90%;
+    height: 700px;
+    border: 1px solid black;
+    margin: 0 auto;
+}
+
+/* Container */
+.control-layers {
+    background: #fff;
+    border: 2px solid #ccc;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+    font-family: livvic;
+    font-size: 11px;
+    position: absolute; /* Use absolute positioning */
+    top: 10px;          /* Distance from the top edge */
+    right: 10px;        /* Distance from the right edge */
+    z-index: 1000;      /* Ensure it stays above other map layers */
+    font-weight: bold;
+}
+
+.control-layers-list {
+    margin: 0;
+    padding: 0;
+}
+
+.control-layers-list p {
+    margin-top: 0px;
+    margin-bottom: 3px;
+}
+
+.control-layers label {
+    display: block;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.control-layers input {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.control-layers label:hover {
+    background-color: #f9f9f9;
+    border-radius: 3px;
+}
+
+#biomass {
+    color: green;
+}
+
+#species {
+    color: red;
+}
+
+#soil_nitrogen {
+    color: blue;
+}
+
+#soil_organic_carbon {
+    color: brown;
+}
+
+#soil_pH {
+    color: purple;
+}
+
+hr {
+    border: none;           /* Remove default border */
+    border-top: 1px solid #ccc; /* Add a light gray line */
+    margin: 4px 0;          /* Add vertical spacing */
+}
