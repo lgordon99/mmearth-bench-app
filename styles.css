@@ -42,14 +42,15 @@ h1 {
 }
 
 .control-layers label {
-    display: block;
+    display: flex;
     cursor: pointer;
     font-weight: 600;
+    align-items: center;
 }
 
-.control-layers input {
-    margin-right: 5px;
-    vertical-align: middle;
+.control-layers input[type="radio"] {
+    vertical-align: middle; /* Aligns the checkbox with the text */
+    margin: 0 5px 0 0;
 }
 
 .control-layers label:hover {
@@ -81,4 +82,42 @@ hr {
     border: none;           /* Remove default border */
     border-top: 1px solid #ccc; /* Add a light gray line */
     margin: 4px 0;          /* Add vertical spacing */
+}
+
+#hover-panel {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+#task-value {
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+#hover-panel label {
+    pointer-events: auto; /* Enable pointer events for the checkbox and label */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+#hover-panel input[type="checkbox"] {
+    vertical-align: middle; /* Aligns the checkbox with the text */
+    margin: 0 10px 0 0;
+    cursor: pointer;
+}
+
+#image-level-modalities-data {
+    display: none;
+    margin-top: 5px;
+    margin-bottom: 0;
+    line-height: 20px;
 }
