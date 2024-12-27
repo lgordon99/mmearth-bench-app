@@ -1,70 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
-    <title>MMEarth-Bench</title>
-</head>
-<body>
-    <h1>MMEarth-Bench</h1>
-    <div id="map">
-        <div class="control-layers">
-            <form class="control-layers-list">
-                <div>
-                    <p>Background</p>
-                    <label>
-                        <input type="radio" name="background" id="world-map" checked>
-                        <span>World map</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="background" id="clear">
-                        <span>Clear</span>
-                    </label>
-                </div>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <link rel="stylesheet" href="styles.css">
+        <script src="script.js" defer></script>
+        <title>MMEarth-Bench</title>
+    </head>
+    <body>
+        <h1>MMEarth-Bench</h1>
+        <div id="map">
+            <div class="control-layers">
+                <form class="control-layers-list">
+                    <div>
+                        <p>Background</p>
+                        <label>
+                            <input type="radio" name="background" id="world-map" checked>
+                            <span>World map</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="background" id="clear">
+                            <span>Clear</span>
+                        </label>
+                    </div>
+                    <hr>
+                    <div>
+                        <p>Tasks</p>
+                        <label>
+                            <input type="checkbox" checked>
+                            <span id="biomass">Biomass</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="species-checkbox" checked>
+                            <span id="species">Species</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="soil_nitrogen-checkbox" checked>
+                            <span id="soil_nitrogen">Soil nitrogen</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="soil_organic_carbon-checkbox" checked>
+                            <span id="soil_organic_carbon">Soil organic carbon</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" id="soil_pH-checkbox" checked>
+                            <span id="soil_pH">Soil pH</span>
+                        </label>
+                    </div>
+                    <hr>
+                    <div>
+                        <p>Pixel-level modalities</p>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="none" checked>
+                            <span>None</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="Sentinel-2">
+                            <span>Sentinel-2</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="Sentinel-1">
+                            <span>Sentinel-1</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="AsterDEM-elevation">
+                            <span>Elevation</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="ETHGCH-canopy-height">
+                            <span>Canopy height</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="DynamicWorld">
+                            <span>Dynamic world</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pixel-level-modalities" id="ESA-Worldcover">
+                            <span>World cover</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div id="hover-panel"">
+                <p id="task-value"></p>
                 <hr>
-                <div>
-                    <p>Tasks</p>
-                    <label>
-                        <input type="checkbox" checked>
-                        <span id="biomass">Biomass</span>
-                    </label>
-                    <label>
-                        <input type="checkbox" id="species-checkbox" checked>
-                        <span id="species">Species</span>
-                    </label>
-                    <label>
-                        <input type="checkbox" id="soil_nitrogen-checkbox" checked>
-                        <span id="soil_nitrogen">Soil nitrogen</span>
-                    </label>
-                    <label>
-                        <input type="checkbox" checked>
-                        <span id="soil_organic_carbon">Soil organic carbon</span>
-                    </label>
-
-                    <label>
-                        <input type="checkbox" checked>
-                        <span id="soil_pH">Soil pH</span>
-                    </label>
-                </div>
-                <hr>
-                <div>
-                    <p>Modalities</p>
-                    <label>
-                        <input type="radio" name="modalities" id="none" checked>
-                        <span>None</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="modalities" id="sentinel-2">
-                        <span>Sentinel-2</span>
-                    </label>
-                </div>
-            </form>
+                <label>
+                    <input type="checkbox" id="image-level-modalities-checkbox">
+                    <span>Show image-level modalities</span>
+                </label>
+                <p id="image-level-modalities-data"></p>
+            </div>
         </div>
-    </div>
-</body>
+    </body>
 </html>
