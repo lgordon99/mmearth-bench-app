@@ -6,12 +6,13 @@ let Stadia_OSMBright = L.tileLayer('https://tiles.stadiamaps.com/tiles/osm_brigh
 	ext: 'png'
 });
 const tasks = {
-			//    'species': {'title': 'Species', 'color': 'red'},
+			//    'biomass': {'title': 'Biomass', 'color': 'green'},
+			   'species': {'title': 'Species', 'color': 'red'},
                'soil_nitrogen': {'title': 'Soil nitrogen', 'color': 'blue'},
-			//    'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
-			//    'soil_pH': {'title': 'Soil pH', 'color': 'purple'}
+			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
+			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'}
 			};
-let layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {'tileLayer': L.layerGroup(),
+let layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {'solidTileLayer': L.layerGroup(),
         												  			   'baseTileLayer': L.layerGroup(),
         												  			   'Sentinel-2': {},
 																	   'Sentinel-1': {},
@@ -64,7 +65,7 @@ function showTilesWithoutModality() {
 						fillOpacity: 0.7
 					};
 				}
-			}).addTo(layers[task]['tileLayer']);
+			}).addTo(layers[task]['solidTileLayer']);
 			
 			// tile border
 			L.geoJson(data, {
@@ -92,7 +93,14 @@ function showTilesWithoutModality() {
 				onEachFeature: function (feature, layer) {
 					layer.on({mouseover: function (e) {
 						hoveredTileBounds = layer.getBounds();
-						let taskData = `${tasks[task]['title']}: ${feature.properties[task]}`;
+						let taskData = `${tasks[task]['title']}:`
+
+						if (task == 'species' && feature.properties[task].includes(',')) {
+							taskData += `\n${feature.properties[task].replace(/,/g, '\n')}`;
+						} else {
+							taskData += ` ${feature.properties[task]}`
+						}
+						// let taskData = `${tasks[task]['title']}: ${feature.properties[task]}`;
 					
 						if (task == 'soil_nitrogen' || task == 'soil_organic_carbon') {
 							taskData += ' g/kg';
@@ -113,7 +121,7 @@ function showTilesWithoutModality() {
 				});
 			}}).addTo(layers[task]['baseTileLayer']);
 		
-			layers[task]['tileLayer'].addTo(map);
+			layers[task]['solidTileLayer'].addTo(map);
 			layers[task]['baseTileLayer'].addTo(map);
 		});
 	}
@@ -257,7 +265,7 @@ for (const task of Object.keys(tasks)) {
 			map.addLayer(layers[task]['baseTileLayer']);
 
 			if (document.getElementById("none").checked) {
-				map.addLayer(layers[task]['tileLayer']);
+				map.addLayer(layers[task]['solidTileLayer']);
 			}
 
 			for (const modality of pixelLevelModalities) {
@@ -268,8 +276,8 @@ for (const task of Object.keys(tasks)) {
 		} else { // if task checkbox unchecked
 			map.removeLayer(layers[task]['baseTileLayer']);
 
-			if (map.hasLayer(layers[task]['tileLayer'])) {
-				map.removeLayer(layers[task]['tileLayer']);
+			if (map.hasLayer(layers[task]['solidTileLayer'])) {
+				map.removeLayer(layers[task]['solidTileLayer']);
 			}	
 
 			hidePixelLevelModalities(task);
@@ -284,7 +292,7 @@ document.getElementById("none").addEventListener("click", function() {
 	for (const task of Object.keys(tasks)) {
 		if (document.getElementById(`${task}-checkbox`).checked) {
 			hidePixelLevelModalities(task);
-			map.addLayer(layers[task]['tileLayer']);
+			map.addLayer(layers[task]['solidTileLayer']);
 		};
 	}
 });
@@ -296,7 +304,7 @@ for (const modality of pixelLevelModalities) {
 
 		for (const task of Object.keys(tasks)) {
 			if (document.getElementById(`${task}-checkbox`).checked) { // if the task is selected
-				map.removeLayer(layers[task]['tileLayer']);
+				map.removeLayer(layers[task]['solidTileLayer']);
 				showVisibleTiles(task, modality);
 			}
 		}
