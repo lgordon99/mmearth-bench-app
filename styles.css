@@ -58,23 +58,23 @@ h1 {
     border-radius: 3px;
 }
 
-#biomass {
+/* #biomass-label {
     color: green;
-}
+} */
 
-#species {
+#species-label {
     color: red;
 }
 
-#soil_nitrogen {
+#soil_nitrogen-label {
     color: blue;
 }
 
-#soil_organic_carbon {
+#soil_organic_carbon-label {
     color: brown;
 }
 
-#soil_pH {
+#soil_pH-label {
     color: purple;
 }
 
