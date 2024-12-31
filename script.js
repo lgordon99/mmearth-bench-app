@@ -12,21 +12,15 @@ const tasks = {
 			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
 			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'}
 			};
-let layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {'solidTileLayer': L.layerGroup(),
-        												  			   'baseTileLayer': L.layerGroup(),
-        												  			   'Sentinel-2': {},
-																	   'Sentinel-1': {},
-																	   'AsterDEM-elevation': {},
-																	   'ETHGCH-canopy-height': {},
-																	   'DynamicWorld': {},
-																	   'ESA-Worldcover': {}}]));
+const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
 const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
 const hoverPanel = document.getElementById('hover-panel');
 const taskValue = document.getElementById('task-value')
 const imageLevelModalities = document.getElementById('image-level-modalities-data');
 const imageLevelModalityCheckbox = document.getElementById('image-level-modalities-checkbox');
 let hoveredTileBounds = null;
-let selectedModality = null;
+let selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
+let checkedTasks = Array.from(document.querySelectorAll('input[name="task"]:checked')).map(checkbox => checkbox.id);
 
 function round(number, numDecimals) {
     const factor = Math.pow(10, numDecimals);
@@ -46,149 +40,162 @@ function showHoverPanel(e, taskData, imageLevelModalityData) {
 	imageLevelModalities.innerText = imageLevelModalityData;
 }
 
-function hideHoverPanel() {
-    hoverPanel.style.display = 'none';
-}
+async function loadTaskLayers(task) {
+	const response = await fetch(`${task}/${task}_tile_gdf.geojson`);
+	const data = await response.json();
 
-function showTilesWithoutModality() {
-	for (const task of Object.keys(tasks)) {
-		fetch(`${task}/${task}_tile_gdf.geojson`)
-		.then(response => response.json())
-		.then(data => {
-			// solid tile
-			L.geoJson(data, {
-				style: function(feature) {
-					return {
-						fillColor: tasks[task]['color'],
-						color: tasks[task]['color'],
-						weight: 1,
-						fillOpacity: 0.7
-					};
-				}
-			}).addTo(layers[task]['solidTileLayer']);
-			
-			// tile border
-			L.geoJson(data, {
-				style: function(feature) {
-					return {
-						fillOpacity: 0,
-						weight: 3,
-						color: tasks[task]['color'],
-						interactive: false,  // border shouldn't capture interactions
-						pane: 'borderPane' // lower pane for borders
-					};
-				}
-			}).addTo(layers[task]['baseTileLayer']);
-			
-			// show task value upon hover
-			L.geoJson(data, {
-				style: function(feature) {
-					return {
-						fillOpacity: 0,
-						weight: 0,
-						interactive: true,
-						pane: 'tooltipPane' // uses a custom pane that's always on top
-					};
-				}, 
-				onEachFeature: function (feature, layer) {
-					layer.on({mouseover: function (e) {
-						hoveredTileBounds = layer.getBounds();
-						let taskData = `${tasks[task]['title']}:`
+	data.features.forEach(tile => {
+		const id = tile.properties.id;
+		const color = tasks[task]['color'];
 
-						if (task == 'species' && feature.properties[task].includes(',')) {
-							taskData += `\n${feature.properties[task].replace(/,/g, '\n')}`;
+		layers[task][id] = {};
+		layers[task][id]['bounds'] = L.geoJson(tile).getBounds();
+		layers[task][id]['baseLayers'] = {}
+		layers[task][id]['backgrounds'] = {}
+		layers[task][id]['baseLayers']['border'] = L.geoJson(tile, {
+			style: function() {
+				return {
+					fillOpacity: 0,
+					weight: 3,
+					color: color,
+					interactive: false,
+					pane: 'borderPane'
+				};
+			}
+		});
+		layers[task][id]['baseLayers']['hoverPanel'] = L.geoJson(tile, {
+			style: function() {
+				return {
+					fillOpacity: 0,
+					weight: 0,
+					interactive: true,
+					pane: 'hoverPanelPane'
+				};
+			},
+			onEachFeature: function(_, layer) {
+				layer.on({
+					mouseover: function(e) {
+						hoveredTileBounds = layers[task][id]['bounds'];
+
+						let taskData = `${tasks[task]['title']}:`;
+
+						if (task == 'species' && tile.properties[task].includes(',')) {
+							taskData += `\n${tile.properties[task].replace(/,/g, '\n')}`;
 						} else {
-							taskData += ` ${feature.properties[task]}`
+							taskData += ` ${tile.properties[task]}`;
 						}
-						// let taskData = `${tasks[task]['title']}: ${feature.properties[task]}`;
-					
-						if (task == 'soil_nitrogen' || task == 'soil_organic_carbon') {
+
+						if (task === 'soil_nitrogen' || task === 'soil_organic_carbon') {
 							taskData += ' g/kg';
 						}
 
-						const imageLevelModalityData = `Latitude: ${feature.properties['latitude']}
-						Longitude: ${feature.properties['longitude']}
-						Month: ${feature.properties['month']}
-						Biome: ${feature.properties['biome']}
-						Ecoregion: ${feature.properties['ecoregion']}\n
+						const imageLevelModalityData = `Latitude: ${tile.properties['latitude']}
+						Longitude: ${tile.properties['longitude']}
+						Month: ${tile.properties['month']}
+						Biome: ${tile.properties['biome']}
+						Ecoregion: ${tile.properties['ecoregion']}\n
 						Climate
-						${Object.entries(feature.properties['climate'])
+						${Object.entries(tile.properties['climate'])
 							.map(([key, value]) => `${key}: ${round(value, 2)} ${key.includes('Temperature') ? 'K' : 'm'}`)
 							.join('\n')}`
 							.trim();
+
 						showHoverPanel(e, taskData, imageLevelModalityData);
 					}
 				});
-			}}).addTo(layers[task]['baseTileLayer']);
-		
-			layers[task]['solidTileLayer'].addTo(map);
-			layers[task]['baseTileLayer'].addTo(map);
-		});
-	}
-}
-
-function loadPixelLevelModalities() {
-	for (const task of Object.keys(tasks)) {
-		fetch(`${task}/${task}_tile_bounds.json`) // fetches the tile bounds JSON for the given task
-		.then(response => response.json())
-		.then(data => {
-			for (const key in data) {
-				const bounds = L.latLngBounds([[data[key][0][0], data[key][0][1]], // southwest corner
-											   [data[key][1][0], data[key][1][1]]]); // northeast corner
-				
-				for (const modality of pixelLevelModalities) {
-					const tileLayer = L.imageOverlay(`${task}/tiles/${modality}/${key}${modality}.png`,
-													 data[key],
-													 {opacity: 0.9});
-					layers[task][modality][key] = {layer: tileLayer, bounds: bounds};
-				}
 			}
 		});
-	}
+		layers[task][id]['backgrounds']['solid'] = L.geoJson(tile, {
+			style: function() {
+				return {
+					fillColor: color,
+					color: color,
+					weight: 1,
+					fillOpacity: 0.7
+				};
+			}
+		});
+		for (const modality of pixelLevelModalities) {
+			layers[task][id]['backgrounds'][modality] = L.imageOverlay(`${task}/tiles/${modality}/tile_${id}_${modality}.png`,
+																		layers[task][id]['bounds'],
+																		{opacity: 0.9});
+		}
+	});
 }
 
-function showVisibleTiles(task, modality) {
+function showVisibleTiles(task, selectedBackground) {
 	const visibleBounds = map.getBounds(); // gets the current map bounds
 
-	for (const key in layers[task][modality]) { // loops through all the tiles
-		const tile = layers[task][modality][key]; // gets the tile in the selected modality
+	for (const id of Object.keys(layers[task])) {
+		const tile = layers[task][id];
 
-		if (visibleBounds.intersects(tile.bounds)) { // if the tile is visible on the map
-			if (!map.hasLayer(tile.layer)) { // if the tile's modality is not already on the map
-				map.addLayer(tile.layer); // add the tile's modality to the map
+		if (visibleBounds.intersects(tile['bounds'])) {
+			if (!map.hasLayer(tile['backgrounds'][selectedBackground])) {
+				map.addLayer(tile['backgrounds'][selectedBackground]);
 			}
 
-			for (const otherModality of pixelLevelModalities) { // loops through all the modalities
-				if (otherModality != modality) { // if the modality is not the selected one
-					const otherTile = layers[task][otherModality][key]; // gets the tile in a specific modality
-
-					if (map.hasLayer(otherTile.layer)) { // if the tile has another modality visible
-						map.removeLayer(otherTile.layer); // removes the tile's other modality from the map
-					}	
+			for (const baseLayer of Object.keys(tile['baseLayers'])) {
+				if (!map.hasLayer(tile['baseLayers'][baseLayer])) {
+					map.addLayer(tile['baseLayers'][baseLayer]);
 				}
 			}
-		} else { // if the tile is not visible on the map
-			for (const otherModality of pixelLevelModalities) { // loops through all the modalities
-					const otherTile = layers[task][otherModality][key]; // gets the tile in a specific modality
 
-				if (map.hasLayer(otherTile.layer)) { // if the tile has that modality visible
-					map.removeLayer(otherTile.layer); // removes the tile's modality from the map
+			for (const otherBackground of Object.keys(tile['backgrounds'])) {
+				if (otherBackground != selectedBackground) {
+					const otherBackgroundLayer = layers[task][id]['backgrounds'][otherBackground];
+
+					if (map.hasLayer(otherBackgroundLayer)) {
+						map.removeLayer(otherBackgroundLayer);
+					}
+				}
+			}
+		} else {
+			for (const baseLayer of Object.keys(tile['baseLayers'])) {
+				if (map.hasLayer(tile['baseLayers'][baseLayer])) {
+					map.removeLayer(tile['baseLayers'][baseLayer]);
+				}
+			}
+
+			for (const background of Object.keys(tile['backgrounds'])) {
+				const backgroundLayer = layers[task][id]['backgrounds'][background];
+
+				if (map.hasLayer(backgroundLayer)) {
+					map.removeLayer(backgroundLayer);
 				}
 			}
 		}
 	}
 }
 
-function hidePixelLevelModalities(task) {
-	for (const modality of pixelLevelModalities) { // loops through all the modalities
-		for (const key in layers[task][modality]) { // loops through all the tiles
-			const tile = layers[task][modality][key]; // gets the tile in the selected modality
-			
-			if (map.hasLayer(tile.layer)) { // if the tile has the modality visible
-				map.removeLayer(tile.layer); // removes the tile's modality from the map
-			}	
+async function loadAndDisplayTasks() {
+	for (const task of checkedTasks) {
+		await loadTaskLayers(task);
+		showVisibleTiles(task, selectedBackground);
+	}
+}
+
+function hideTask(task) {
+	for (const id of Object.keys(layers[task])) {
+		const tile = layers[task][id];
+
+		for (const baseLayer of Object.keys(tile['baseLayers'])) {
+			if (map.hasLayer(tile['baseLayers'][baseLayer])) {
+				map.removeLayer(tile['baseLayers'][baseLayer]);
+			}
+		}
+
+		for (const background of Object.keys(tile['backgrounds'])) {
+			const backgroundLayer = layers[task][id]['backgrounds'][background];
+
+			if (map.hasLayer(backgroundLayer)) {
+				map.removeLayer(backgroundLayer);
+			}
 		}
 	}
+}
+
+function hideHoverPanel() {
+    hoverPanel.style.display = 'none';
 }
 
 Stadia_OSMBright.addTo(map);
@@ -196,12 +203,11 @@ Stadia_OSMBright.addTo(map);
 map.createPane('borderPane');
 map.getPane('borderPane').style.zIndex = 400; // lower z-index for borders
 
-map.createPane('tooltipPane');
-map.getPane('tooltipPane').style.zIndex = 650; // higher z-index for tooltips
-map.getPane('tooltipPane').style.pointerEvents = 'all';
+map.createPane('hoverPanelPane');
+map.getPane('hoverPanelPane').style.zIndex = 650; // higher z-index for tooltips
+map.getPane('hoverPanelPane').style.pointerEvents = 'all';
 
-showTilesWithoutModality();
-loadPixelLevelModalities();
+loadAndDisplayTasks();
 
 map.on('mousemove', function(e) { // whenever the mouse moves
     if (hoveredTileBounds) { // if a tile has been hovered over
@@ -222,23 +228,15 @@ map.on('zoomend', function(e) { // after zooming
 		hoverPanel.style.top = `${point.y}px`;
 	}
 
-	if (selectedModality) {
-		for (const task of Object.keys(tasks)) {
-			if (document.getElementById(`${task}-checkbox`).checked) { // if the task is selected
-				showVisibleTiles(task, selectedModality); // shows only the tiles visible on the screen
-			}
-		}
-	}
+	for (const task of checkedTasks) {
+		showVisibleTiles(task, selectedBackground);
+	}	
 });
 
 map.on('moveend', function() {
-	if (selectedModality) {
-		for (const task of Object.keys(tasks)) {
-			if (document.getElementById(`${task}-checkbox`).checked) { // if the task is selected
-				showVisibleTiles(task, selectedModality); // shows only the tiles visible on the screen
-			}
-		}
-	}
+	for (const task of checkedTasks) {
+		showVisibleTiles(task, selectedBackground);
+	}	
 });
 
 // add event listener for the image level modality checkbox
@@ -260,53 +258,24 @@ document.getElementById("clear").addEventListener("click", function() {
 
 // task buttons clicked
 for (const task of Object.keys(tasks)) {
-	document.getElementById(`${task}-checkbox`).addEventListener("change", function(e) {
+	document.getElementById(task).addEventListener("change", function(e) {
+		checkedTasks = Array.from(document.querySelectorAll('input[name="task"]:checked')).map(checkbox => checkbox.id);
+
 		if (e.target.checked) { // if task checkbox checked
-			map.addLayer(layers[task]['baseTileLayer']);
-
-			if (document.getElementById("none").checked) {
-				map.addLayer(layers[task]['solidTileLayer']);
-			}
-
-			for (const modality of pixelLevelModalities) {
-				if (document.getElementById(modality).checked) {
-					showVisibleTiles(task, modality);
-				}
-			}
+			showVisibleTiles(task, selectedBackground);
 		} else { // if task checkbox unchecked
-			map.removeLayer(layers[task]['baseTileLayer']);
-
-			if (map.hasLayer(layers[task]['solidTileLayer'])) {
-				map.removeLayer(layers[task]['solidTileLayer']);
-			}	
-
-			hidePixelLevelModalities(task);
+			hideTask(task);
 		}
 	});
 }
-
-// None button clicked
-document.getElementById("none").addEventListener("click", function() {
-	selectedModality = null;
-
-	for (const task of Object.keys(tasks)) {
-		if (document.getElementById(`${task}-checkbox`).checked) {
-			hidePixelLevelModalities(task);
-			map.addLayer(layers[task]['solidTileLayer']);
-		};
-	}
-});
 
 // modality buttons clicked
-for (const modality of pixelLevelModalities) {
-	document.getElementById(modality).addEventListener("click", function() {
-		selectedModality = modality;
+document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+		selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
 
-		for (const task of Object.keys(tasks)) {
-			if (document.getElementById(`${task}-checkbox`).checked) { // if the task is selected
-				map.removeLayer(layers[task]['solidTileLayer']);
-				showVisibleTiles(task, modality);
-			}
+		for (const task of checkedTasks) {
+			showVisibleTiles(task, selectedBackground);
 		}
-	});
-}
+    });
+});
