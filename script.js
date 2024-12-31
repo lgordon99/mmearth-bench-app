@@ -41,7 +41,7 @@ function showHoverPanel(e, taskData, imageLevelModalityData) {
 }
 
 async function loadTaskLayers(task) {
-	const response = await fetch(`${task}/${task}_tile_gdf.geojson`);
+	const response = await fetch(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/${task}_tile_gdf.geojson`);
 	const data = await response.json();
 
 	data.features.forEach(tile => {
@@ -116,7 +116,7 @@ async function loadTaskLayers(task) {
 			}
 		});
 		for (const modality of pixelLevelModalities) {
-			layers[task][id]['backgrounds'][modality] = L.imageOverlay(`${task}/tiles/${modality}/tile_${id}_${modality}.png`,
+			layers[task][id]['backgrounds'][modality] = L.imageOverlay(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/tiles/${modality}/tile_${id}_${modality}.png`,
 																		layers[task][id]['bounds'],
 																		{opacity: 0.9});
 		}
