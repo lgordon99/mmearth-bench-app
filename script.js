@@ -16,6 +16,8 @@ const hoverPanel = document.getElementById('hover-panel');
 const taskValue = document.getElementById('task-value')
 const imageLevelModalities = document.getElementById('image-level-modalities-data');
 const imageLevelModalityCheckbox = document.getElementById('image-level-modalities-checkbox');
+const biomassValuesContainer = document.getElementById('biomass-values-container');
+const biomassValuesCheckbox = document.getElementById('biomass-values-checkbox');
 let hoveredTileBounds = null;
 let selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
 let checkedTasks = Array.from(document.querySelectorAll('input[name="task"]:checked')).map(checkbox => checkbox.id);
@@ -36,6 +38,10 @@ function showHoverPanel(e, taskData, imageLevelModalityData) {
     hoverPanel.style.top = `${point.y}px`;
 	taskValue.innerText = taskData;
 	imageLevelModalities.innerText = imageLevelModalityData;
+
+	if (taskData == 'Biomass:') {
+		biomassValuesContainer.style.display = 'flex';
+	}
 }
 
 async function loadTaskLayers(task) {
@@ -77,14 +83,16 @@ async function loadTaskLayers(task) {
 
 						let taskData = `${tasks[task]['title']}:`;
 
-						if (task == 'species' && tile.properties[task].includes(',')) {
-							taskData += `\n${tile.properties[task].replace(/,/g, '\n')}`;
-						} else {
-							taskData += ` ${tile.properties[task]}`;
-						}
+						if (task != 'biomass') {
+							if (task == 'species' && tile.properties[task].includes(',')) {
+								taskData += `\n${tile.properties[task].replace(/,/g, '\n')}`;
+							} else {
+								taskData += ` ${tile.properties[task]}`;
+							}
 
-						if (task === 'soil_nitrogen' || task === 'soil_organic_carbon') {
-							taskData += ' g/kg';
+							if (task === 'soil_nitrogen' || task === 'soil_organic_carbon') {
+								taskData += ' g/kg';
+							}
 						}
 
 						// const imageLevelModalityData = `ID: ${tile.properties['id']}
@@ -117,6 +125,11 @@ async function loadTaskLayers(task) {
 		});
 		for (const modality of pixelLevelModalities) {
 			layers[task][id]['backgrounds'][modality] = L.imageOverlay(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/tiles/${modality}/tile_${id}_${modality}.png`,
+																		layers[task][id]['bounds'],
+																		{opacity: 0.9});
+		}
+		if (task == 'biomass') {
+			layers[task][id]['backgrounds']['biomass'] = L.imageOverlay(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/tiles/biomass/tile_${id}_biomass.png`,
 																		layers[task][id]['bounds'],
 																		{opacity: 0.9});
 		}
@@ -196,6 +209,7 @@ function hideTask(task) {
 
 function hideHoverPanel() {
     hoverPanel.style.display = 'none';
+	biomassValuesContainer.style.display = 'none';
 }
 
 Stadia_OSMBright.addTo(map);
@@ -239,15 +253,6 @@ map.on('moveend', function() {
 	}	
 });
 
-// add event listener for the image level modality checkbox
-imageLevelModalityCheckbox.addEventListener('change', function () {
-    if (imageLevelModalityCheckbox.checked) {
-        imageLevelModalities.style.display = 'block';
-    } else {
-        imageLevelModalities.style.display = 'none';
-    }
-});
-
 document.getElementById("world-map").addEventListener("click", function() {
 	Stadia_OSMBright.addTo(map);
 });
@@ -278,4 +283,27 @@ document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio 
 			showVisibleTiles(task, selectedBackground);
 		}
     });
+});
+
+// add event listener for the image level modality checkbox
+imageLevelModalityCheckbox.addEventListener('change', function () {
+    if (imageLevelModalityCheckbox.checked) {
+        imageLevelModalities.style.display = 'block';
+    } else {
+        imageLevelModalities.style.display = 'none';
+    }
+});
+
+// add event listener for the biomass values checkbox
+biomassValuesCheckbox.addEventListener('change', function () {
+	if (biomassValuesCheckbox.checked) {
+		selectedBackground = 'biomass';
+		showVisibleTiles('biomass', selectedBackground);
+	} else {
+		selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
+
+		for (const task of checkedTasks) {
+			showVisibleTiles(task, selectedBackground);
+		}
+	}
 });

@@ -85,7 +85,7 @@ hr {
 }
 
 #hover-panel {
-    display: none;
+    display: none; /* Hide by default */
     position: absolute;
     background: white;
     border: 1px solid #ccc;
@@ -96,23 +96,38 @@ hr {
     pointer-events: auto;
 }
 
-#task-value {
-    margin-top: 0px;
-    margin-bottom: 5px;
-}
-
 #hover-panel label {
     pointer-events: auto; /* Enable pointer events for the checkbox and label */
     cursor: pointer;
     display: flex;
     align-items: center;
-    margin-top: 10px;
 }
 
 #hover-panel input[type="checkbox"] {
     vertical-align: middle; /* Aligns the checkbox with the text */
-    margin: 0 10px 0 0;
     cursor: pointer;
+}
+
+#task-value-container {
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+#biomass-values-container {
+    display: none;
+}
+
+#task-value-container input[type="checkbox"] {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+#image-level-modalities-container {
+    margin-top: 10px;
+}
+
+#image-level-modalities-container input[type="checkbox"] {
+    margin: 0 10px 0 0;
 }
 
 #image-level-modalities-data {
