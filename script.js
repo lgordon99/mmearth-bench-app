@@ -5,13 +5,11 @@ let Stadia_OSMBright = L.tileLayer('https://tiles.stadiamaps.com/tiles/osm_brigh
 	attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 	ext: 'png'
 });
-const tasks = {
-			//    'biomass': {'title': 'Biomass', 'color': 'green'},
+const tasks = {'biomass': {'title': 'Biomass', 'color': 'green'},
 			   'species': {'title': 'Species', 'color': 'red'},
                'soil_nitrogen': {'title': 'Soil nitrogen', 'color': 'blue'},
 			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
-			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'}
-			};
+			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'}};
 const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
 const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
 const hoverPanel = document.getElementById('hover-panel');
@@ -89,7 +87,9 @@ async function loadTaskLayers(task) {
 							taskData += ' g/kg';
 						}
 
-						const imageLevelModalityData = `Latitude: ${tile.properties['latitude']}
+						// const imageLevelModalityData = `ID: ${tile.properties['id']}
+						const imageLevelModalityData = `
+						Latitude: ${tile.properties['latitude']}
 						Longitude: ${tile.properties['longitude']}
 						Month: ${tile.properties['month']}
 						Biome: ${tile.properties['biome']}
