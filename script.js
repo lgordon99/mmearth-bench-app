@@ -11,13 +11,16 @@ const tasks = {'biomass': {'title': 'Biomass', 'color': 'green'},
 			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
 			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'}};
 const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
+const zoomInstruction = document.getElementById('zoom-instruction');
+const pixelLevelModalitiesContainer = document.getElementById('pixel-level-modalities-container');
 const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
 const hoverPanel = document.getElementById('hover-panel');
-const taskValue = document.getElementById('task-value')
+const taskValue = document.getElementById('task-value');
 const imageLevelModalities = document.getElementById('image-level-modalities-data');
 const imageLevelModalityCheckbox = document.getElementById('image-level-modalities-checkbox');
 const biomassValuesContainer = document.getElementById('biomass-values-container');
 const biomassValuesCheckbox = document.getElementById('biomass-values-checkbox');
+let currentZoomLevel = map.getZoom();
 let hoveredTileBounds = null;
 let selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
 let checkedTasks = Array.from(document.querySelectorAll('input[name="task"]:checked')).map(checkbox => checkbox.id);
@@ -244,7 +247,17 @@ map.on('zoomend', function(e) { // after zooming
 
 	for (const task of checkedTasks) {
 		showVisibleTiles(task, selectedBackground);
-	}	
+	}
+
+	currentZoomLevel = map.getZoom();
+
+	if (currentZoomLevel >= 10) {
+		pixelLevelModalitiesContainer.style.display = 'block';
+		zoomInstruction.style.display = 'none';
+	} else {
+		zoomInstruction.style.display = 'block';
+		pixelLevelModalitiesContainer.style.display = 'none';
+	}
 });
 
 map.on('moveend', function() {
