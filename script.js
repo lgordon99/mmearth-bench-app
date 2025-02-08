@@ -11,6 +11,7 @@ const tasks = {'biomass': {'title': 'Biomass', 'color': 'green'},
 			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
 			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'}};
 const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
+const viewportHeight = window.innerHeight;
 const zoomInstruction = document.getElementById('zoom-instruction');
 const pixelLevelModalitiesContainer = document.getElementById('pixel-level-modalities-container');
 const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
@@ -30,6 +31,18 @@ function round(number, numDecimals) {
     return Math.round(number * factor) / factor;
 }
 
+
+function preventHoverPanelSpill() {
+	const panelRect = hoverPanel.getBoundingClientRect(); // gets panel dimensions
+	const availableSpaceBelow = viewportHeight - panelRect.top - 40;
+
+	if (panelRect.height > availableSpaceBelow) { // if the panel spills off the bottom of the screen
+        hoverPanel.style.maxHeight = `${availableSpaceBelow}px`;
+    } else {
+        hoverPanel.style.maxHeight = 'none'; // resets height if there's enough space
+    }
+}
+
 function showHoverPanel(e, taskData, imageLevelModalityData) {
 	const tile = e.target;
     const bounds = tile.getBounds();
@@ -38,13 +51,15 @@ function showHoverPanel(e, taskData, imageLevelModalityData) {
 
     hoverPanel.style.display = 'block';
     hoverPanel.style.left = `${point.x}px`;
-    hoverPanel.style.top = `${point.y}px`;
+	hoverPanel.style.top = point.y > 0 ? `${point.y}px` : '0px'; // prevents the hover panel from spilling off the top
 	taskValue.innerText = taskData;
 	imageLevelModalities.innerText = imageLevelModalityData;
 
 	if (taskData == 'Biomass:') {
 		biomassValuesContainer.style.display = 'flex';
 	}
+
+	preventHoverPanelSpill();
 }
 
 async function loadTaskLayers(task) {
@@ -215,6 +230,17 @@ function hideHoverPanel() {
 	biomassValuesContainer.style.display = 'none';
 }
 
+function moveHoverPanel() {
+	const topLeft = hoveredTileBounds.getNorthWest();
+	const point = map.latLngToContainerPoint(topLeft);
+
+	// move the hover panel to the right position
+	hoverPanel.style.left = `${point.x}px`;
+	hoverPanel.style.top = point.y > 0 ? `${point.y}px` : '0px';
+
+	preventHoverPanelSpill();
+}
+
 Stadia_OSMBright.addTo(map);
 
 map.createPane('borderPane');
@@ -228,6 +254,8 @@ loadAndDisplayTasks();
 
 map.on('mousemove', function(e) { // whenever the mouse moves
     if (hoveredTileBounds) { // if a tile has been hovered over
+		// moveHoverPanel();
+
         if (!hoveredTileBounds.contains(e.latlng)) { // if the mouse is no longer in the tile last hovered over
             hideHoverPanel();
             hoveredTileBounds = null;
@@ -237,12 +265,7 @@ map.on('mousemove', function(e) { // whenever the mouse moves
 
 map.on('zoomend', function(e) { // after zooming
 	if (hoveredTileBounds) { // if a tile has been hovered over
-		const topLeft = hoveredTileBounds.getNorthWest();
-		const point = map.latLngToContainerPoint(topLeft);
-
-		// move the hover panel to the right position
-		hoverPanel.style.left = `${point.x}px`;
-		hoverPanel.style.top = `${point.y}px`;
+		moveHoverPanel();
 	}
 
 	for (const task of checkedTasks) {
@@ -296,6 +319,14 @@ document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio 
 			showVisibleTiles(task, selectedBackground);
 		}
     });
+});
+
+hoverPanel.addEventListener('mouseenter', function () {
+    map.scrollWheelZoom.disable(); // disables scroll zoom on the map
+});
+
+hoverPanel.addEventListener('mouseleave', function () {
+    map.scrollWheelZoom.enable(); // enables scroll zoom on the map
 });
 
 // add event listener for the image level modality checkbox

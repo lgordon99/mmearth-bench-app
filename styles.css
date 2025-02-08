@@ -99,6 +99,8 @@ hr {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     pointer-events: auto;
+    max-height: none;
+    overflow-y: auto; /* Enable vertical scrolling when necessary */
 }
 
 #hover-panel label {
