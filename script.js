@@ -15,6 +15,7 @@ const viewportHeight = window.innerHeight;
 const zoomInstruction = document.getElementById('zoom-instruction');
 const pixelLevelModalitiesContainer = document.getElementById('pixel-level-modalities-container');
 const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
+// const pixelLevelModalities =['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover', 'MSK_CLDPRB', 'S2CLOUDLESS']
 const hoverPanel = document.getElementById('hover-panel');
 const taskValue = document.getElementById('task-value');
 const imageLevelModalities = document.getElementById('image-level-modalities-data');
@@ -30,7 +31,6 @@ function round(number, numDecimals) {
     const factor = Math.pow(10, numDecimals);
     return Math.round(number * factor) / factor;
 }
-
 
 function preventHoverPanelSpill() {
 	const panelRect = hoverPanel.getBoundingClientRect(); // gets panel dimensions
@@ -113,9 +113,11 @@ async function loadTaskLayers(task) {
 							}
 						}
 
-						// const imageLevelModalityData = `ID: ${tile.properties['id']}
-						const imageLevelModalityData = `
-						Latitude: ${tile.properties['latitude']}
+						const imageLevelModalityData = 
+						// ID: ${tile.properties['id']}
+						// MSK_CLDPRB cloud fraction: ${round(tile.properties['msk_cldprb_cloudy_pixel_fraction'], 2)}
+						// S2CLOUDLESS cloud fraction: ${round(tile.properties['s2cloudless_cloudy_pixel_fraction'], 2)}
+						`Latitude: ${tile.properties['latitude']}
 						Longitude: ${tile.properties['longitude']}
 						Month: ${tile.properties['month']}
 						Biome: ${tile.properties['biome']}
@@ -274,12 +276,19 @@ map.on('zoomend', function(e) { // after zooming
 
 	currentZoomLevel = map.getZoom();
 
-	if (currentZoomLevel >= 10) {
+	if (currentZoomLevel >= 10) { // if the user has zoomed in far enough
 		pixelLevelModalitiesContainer.style.display = 'block';
 		zoomInstruction.style.display = 'none';
-	} else {
+	} else { // if the user has not zoomed in far enough
 		zoomInstruction.style.display = 'block';
 		pixelLevelModalitiesContainer.style.display = 'none';
+		biomassValuesCheckbox.checked = false;
+		selectedBackground = 'solid';
+		document.querySelector(`input[name="pixel-level-modalities"][id=${selectedBackground}]`).checked = true;
+
+		for (const task of checkedTasks) {
+			showVisibleTiles(task, selectedBackground);
+		}
 	}
 });
 
