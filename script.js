@@ -14,8 +14,8 @@ const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
 const viewportHeight = window.innerHeight;
 const zoomInstruction = document.getElementById('zoom-instruction');
 const pixelLevelModalitiesContainer = document.getElementById('pixel-level-modalities-container');
-const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
-// const pixelLevelModalities =['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover', 'MSK_CLDPRB', 'S2CLOUDLESS']
+// const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
+const pixelLevelModalities =['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover', 'MSK_CLDPRB', 'S2CLOUDLESS']
 const hoverPanel = document.getElementById('hover-panel');
 const taskValue = document.getElementById('task-value');
 const imageLevelModalities = document.getElementById('image-level-modalities-data');
@@ -114,10 +114,10 @@ async function loadTaskLayers(task) {
 						}
 
 						const imageLevelModalityData = 
-						// ID: ${tile.properties['id']}
-						// MSK_CLDPRB cloud fraction: ${round(tile.properties['msk_cldprb_cloudy_pixel_fraction'], 2)}
-						// S2CLOUDLESS cloud fraction: ${round(tile.properties['s2cloudless_cloudy_pixel_fraction'], 2)}
-						`Latitude: ${tile.properties['latitude']}
+						`ID: ${tile.properties['id']}
+						MSK_CLDPRB cloud fraction: ${round(tile.properties['msk_cldprb_cloudy_pixel_fraction'], 2)}
+						S2CLOUDLESS cloud fraction: ${round(tile.properties['s2cloudless_cloudy_pixel_fraction'], 2)}
+						Latitude: ${tile.properties['latitude']}
 						Longitude: ${tile.properties['longitude']}
 						Month: ${tile.properties['month']}
 						Biome: ${tile.properties['biome']}
