@@ -301,7 +301,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
     if (forceUpdate) {
         Object.values(layers[task]['tileLayers']).forEach(tileLayer => {
             tileLayer.setStyle({
-                fillColor: selectedBackground === 'solid' ? color : 'transparent',
+                fillColor: (selectedBackground === 'solid' && !(task === 'biomass' && biomassValuesCheckbox.checked)) ? color : 'transparent',
                 color: color,
                 weight: lineWeight,
                 fillOpacity: fillOpacity
@@ -335,7 +335,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
         // Create and add tile layer
         const tileLayer = L.geoJson(feature, {
             style: {
-                fillColor: selectedBackground === 'solid' ? color : 'transparent',
+                fillColor: (selectedBackground === 'solid' && !(task === 'biomass' && biomassValuesCheckbox.checked)) ? color : 'transparent',
                 color: color,
                 weight: lineWeight,
                 fillOpacity: fillOpacity,
@@ -625,35 +625,49 @@ for (const task of Object.keys(tasks)) {
 // modality buttons clicked
 document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio => {
     radio.addEventListener('change', () => {
-		selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
-		console.log(`Modality changed to: ${selectedBackground}`);
+	selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
+	console.log(`Modality changed to: ${selectedBackground}`);
 
-		// Hide all legends first
-		dynamicWorldLegend.style.display = 'none';
-		esaWorldCoverLegend.style.display = 'none';
-		mskCldprbLegend.style.display = 'none';
-		s2cloudlessLegend.style.display = 'none';
-		sclLegend.style.display = 'none';
-		ethGchLegend.style.display = 'none';
+	// If a non-solid background is selected, uncheck biomass values
+	if (selectedBackground !== 'solid' && biomassValuesCheckbox.checked) {
+		biomassValuesCheckbox.checked = false;
+		biomassLegend.style.display = 'none';
 		
-		// Show the appropriate legend
-		if (selectedBackground === 'DynamicWorld') {
-			dynamicWorldLegend.style.display = 'block';
-		} else if (selectedBackground === 'ESA_WorldCover') {
-			esaWorldCoverLegend.style.display = 'block';
-		} else if (selectedBackground === 'MSK_CLDPRB') {
-			mskCldprbLegend.style.display = 'block';
-		} else if (selectedBackground === 'S2CLOUDLESS') {
-			s2cloudlessLegend.style.display = 'block';
-		} else if (selectedBackground === 'SCL') {
-			sclLegend.style.display = 'block';
-		} else if (selectedBackground === 'ETH_GCH') {
-			ethGchLegend.style.display = 'block';
+		// Remove biomass image overlays
+		if (layers['biomass'] && layers['biomass']['biomassImageOverlays']) {
+			layers['biomass']['biomassImageOverlays'].forEach(overlay => {
+				map.removeLayer(overlay);
+			});
+			layers['biomass']['biomassImageOverlays'] = [];
 		}
+	}
 
-		for (const task of checkedTasks) {
-			showVisibleTiles(task, selectedBackground, true); // force update
-		}
+	// Hide all legends first
+	dynamicWorldLegend.style.display = 'none';
+	esaWorldCoverLegend.style.display = 'none';
+	mskCldprbLegend.style.display = 'none';
+	s2cloudlessLegend.style.display = 'none';
+	sclLegend.style.display = 'none';
+	ethGchLegend.style.display = 'none';
+	
+	// Show the appropriate legend
+	if (selectedBackground === 'DynamicWorld') {
+		dynamicWorldLegend.style.display = 'block';
+	} else if (selectedBackground === 'ESA_WorldCover') {
+		esaWorldCoverLegend.style.display = 'block';
+	} else if (selectedBackground === 'MSK_CLDPRB') {
+		mskCldprbLegend.style.display = 'block';
+	} else if (selectedBackground === 'S2CLOUDLESS') {
+		s2cloudlessLegend.style.display = 'block';
+	} else if (selectedBackground === 'SCL') {
+		sclLegend.style.display = 'block';
+	} else if (selectedBackground === 'ETH_GCH') {
+		ethGchLegend.style.display = 'block';
+	}
+
+	for (const task of checkedTasks) {
+		showVisibleTiles(task, selectedBackground, true); // force update
+	}
     });
 });
 
@@ -679,6 +693,10 @@ biomassValuesCheckbox.addEventListener('change', function () {
 	if (biomassValuesCheckbox.checked) {
 		biomassLegend.style.display = 'block';
 		updateBiomassOverlays();
+		// Refresh biomass tiles to make them transparent
+		if (layers['biomass']) {
+			showVisibleTiles('biomass', selectedBackground, true);
+		}
 	} else {
 		biomassLegend.style.display = 'none';
 		
@@ -688,6 +706,10 @@ biomassValuesCheckbox.addEventListener('change', function () {
 				map.removeLayer(overlay);
 			});
 			layers['biomass']['biomassImageOverlays'] = [];
+		}
+		// Refresh biomass tiles to restore solid color
+		if (layers['biomass']) {
+			showVisibleTiles('biomass', selectedBackground, true);
 		}
 	}
 });
@@ -777,14 +799,26 @@ function updateZoomLevel() {
 	zoomLevelValue.textContent = Math.round(zoom);
 }
 
+// Track previous zoom level to detect transitions
+let previousZoom = map.getZoom();
+let wasBackgroundReset = false;
+
 // Use throttle for zoom events (less frequent, but still responsive)
 const throttledZoomUpdate = throttle(() => {
 	const zoom = map.getZoom();
+	const crossedThreshold = (previousZoom < 10 && zoom >= 10) || (previousZoom >= 10 && zoom < 10);
+	let forceUpdate = crossedThreshold;
 	
 	// Show/hide pixel-level modalities based on zoom level
 	if (zoom >= 10) {
 		pixelLevelModalitiesContainer.style.display = 'block';
 		zoomInstruction.style.display = 'none';
+		
+		// If we just zoomed back in and background was reset, force update
+		if (wasBackgroundReset) {
+			forceUpdate = true;
+			wasBackgroundReset = false;
+		}
 		
 		// Update hover panel position if hovering
 		if (hoveredTileBounds) {
@@ -812,15 +846,18 @@ const throttledZoomUpdate = throttle(() => {
 		if (selectedBackground !== 'solid') {
 			selectedBackground = 'solid';
 			document.querySelector('input[name="pixel-level-modalities"][id="solid"]').checked = true;
+			wasBackgroundReset = true;
 		}
 	}
 	
 	for (const task of checkedTasks) {
-		showVisibleTiles(task, selectedBackground);
+		showVisibleTiles(task, selectedBackground, forceUpdate);
 	}
 	// Update biomass overlays if showing biomass values
 	updateBiomassOverlays();
 	updateZoomLevel();
+	
+	previousZoom = zoom;
 }, 150);
 
 // Update during move using requestAnimationFrame for smoothness
