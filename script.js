@@ -458,7 +458,16 @@ function restoreHoverState(task, mouseLatLng) {
 }
 
 async function loadAndDisplayTasks() {
+	const loadingText = document.getElementById('loading-text');
+	const loadingSpinner = document.querySelector('.loading-spinner');
+	
 	for (const task of checkedTasks) {
+		// Update loading text and spinner color to match task
+		const taskName = tasks[task]['title'].toLowerCase().replace(' ph', ' pH');
+		loadingText.innerText = `Loading ${taskName} tiles...`;
+		loadingText.style.color = tasks[task]['color'];
+		loadingSpinner.style.borderTopColor = tasks[task]['color'];
+		
 		await loadTaskLayers(task); // loads the task data
 		showVisibleTiles(task, selectedBackground, true); // shows the tiles for the task
 	}
