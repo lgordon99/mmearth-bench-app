@@ -17,13 +17,11 @@ let Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest
 	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 });
 
-const tasks = {
-	'biomass': {'title': 'Biomass', 'color': 'green'},
+const tasks = {'biomass': {'title': 'Biomass', 'color': 'green'},
                'soil_nitrogen': {'title': 'Soil nitrogen', 'color': 'blue'},
 			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
 			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'},
-               'species': {'title': 'Species', 'color': 'red'}
-			};
+               'species': {'title': 'Species', 'color': 'red'}};
 const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
 const viewportHeight = window.innerHeight;
 const zoomInstruction = document.getElementById('zoom-instruction');
@@ -110,10 +108,25 @@ function updateBiomassOverlays() {
 	const visibleBounds = map.getBounds();
 	const tilesWithBounds = layers['biomass']['tilesWithBounds'];
 	
-	// Filter visible features
+	// Get selected split indices
+	const selectedIndices = getSelectedSplitIndices('biomass');
+	
+	// Filter visible features by bounds and split
 	let visibleTiles = tilesWithBounds
-		.filter(item => visibleBounds.intersects(item.bounds))
-		.map(item => item.feature);
+		.filter(item => visibleBounds.intersects(item.bounds));
+	
+	// Filter by split indices if splits are loaded
+	if (selectedIndices !== null) {
+		if (selectedIndices.size === 0) {
+			// No splits selected - show nothing
+			visibleTiles = [];
+		} else {
+			// Filter by selected split indices
+			visibleTiles = visibleTiles.filter(item => selectedIndices.has(item.index));
+		}
+	}
+	
+	visibleTiles = visibleTiles.map(item => item.feature);
 	
 	// Remove old biomass image overlays
 	if (layers['biomass']['biomassImageOverlays']) {
@@ -164,23 +177,73 @@ function showHoverPanel(e, taskData, tileLevelData) {
 	preventHoverPanelSpill();
 }
 
+function getSelectedSplitIndices(task) {
+	if (!layers[task] || !layers[task]['splitData']) return null;
+	
+	const splitData = layers[task]['splitData'];
+	let allIndices = new Set();
+	
+	// Check which splits are selected
+	const trainCheckbox = document.getElementById('train');
+	const validationCheckbox = document.getElementById('validation');
+	const randomTestCheckbox = document.getElementById('random-test');
+	const geographicTestCheckbox = document.getElementById('geographic-test');
+	const trainSelect = document.getElementById('train-select');
+	
+	// Add train indices based on selected percentage
+	if (trainCheckbox && trainCheckbox.checked && trainSelect) {
+		const trainPercentage = trainSelect.value; // 'train-100', 'train-50', or 'train-5'
+		let splitKey;
+		if (trainPercentage === 'train-100') splitKey = 'train_100%_indices';
+		else if (trainPercentage === 'train-50') splitKey = 'train_50%_indices';
+		else if (trainPercentage === 'train-5') splitKey = 'train_5%_indices';
+		
+		if (splitKey && splitData[splitKey]) {
+			splitData[splitKey].forEach(idx => allIndices.add(idx));
+		}
+	}
+	
+	// Add validation indices
+	if (validationCheckbox && validationCheckbox.checked && splitData['val_indices']) {
+		splitData['val_indices'].forEach(idx => allIndices.add(idx));
+	}
+	
+	// Add random test indices
+	if (randomTestCheckbox && randomTestCheckbox.checked && splitData['random_test_indices']) {
+		splitData['random_test_indices'].forEach(idx => allIndices.add(idx));
+	}
+	
+	// Add geographic test indices
+	if (geographicTestCheckbox && geographicTestCheckbox.checked && splitData['geographic_test_indices']) {
+		splitData['geographic_test_indices'].forEach(idx => allIndices.add(idx));
+	}
+	
+	return allIndices;
+}
+
 async function loadTaskLayers(task) {
 	const response = await fetch(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/${task}_map_gdf.geojson`);
 	const data = await response.json();
 	const color = tasks[task]['color'];
 
+	// Load split data
+	const splitResponse = await fetch(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/${task}_split_data.json`);
+	const splitData = await splitResponse.json();
+
 	// Pre-calculate bounds for all tiles to avoid recalculating during panning
-	const tilesWithBounds = data.features.map(tile => {
+	const tilesWithBounds = data.features.map((tile, index) => {
 		const geoJson = L.geoJson(tile);
 		return {
 			feature: tile,
-			bounds: geoJson.getBounds()
+			bounds: geoJson.getBounds(),
+			index: index // Store original index for split filtering
 		};
 	});
 
 	// Store the pre-calculated data
 	layers[task]['allData'] = data;
 	layers[task]['tilesWithBounds'] = tilesWithBounds; // Store pre-calculated bounds
+	layers[task]['splitData'] = splitData; // Store split indices
 	layers[task]['color'] = color;
 	layers[task]['currentLayer'] = null;
 	layers[task]['currentImageOverlays'] = null;
@@ -202,8 +265,23 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
 
     if (!tilesWithBounds) return; // if the data isn't ready yet, return
 
-    // Get currently visible tile IDs
-    const visibleTiles = tilesWithBounds.filter(item => visibleBounds.intersects(item.bounds));
+    // Get selected split indices
+    const selectedIndices = getSelectedSplitIndices(task);
+    
+    // Get currently visible tile IDs, filtered by split
+    let visibleTiles = tilesWithBounds.filter(item => visibleBounds.intersects(item.bounds));
+    
+    // Filter by split indices if splits are loaded
+    if (selectedIndices !== null) {
+        if (selectedIndices.size === 0) {
+            // No splits selected - show nothing
+            visibleTiles = [];
+        } else {
+            // Filter by selected split indices
+            visibleTiles = visibleTiles.filter(item => selectedIndices.has(item.index));
+        }
+    }
+    
     const newVisibleTileIds = new Set(visibleTiles.map(item => item.feature.properties.ID));
     const oldVisibleTileIds = layers[task]['visibleTileIds'];
     
@@ -218,6 +296,18 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
     
     const lineWeight = zoom >= 6 ? 2.5 : 1.5;
     const fillOpacity = selectedBackground === 'solid' ? 0.7 : 0;
+    
+    // If forcing update, update styles of all existing tiles
+    if (forceUpdate) {
+        Object.values(layers[task]['tileLayers']).forEach(tileLayer => {
+            tileLayer.setStyle({
+                fillColor: selectedBackground === 'solid' ? color : 'transparent',
+                color: color,
+                weight: lineWeight,
+                fillOpacity: fillOpacity
+            });
+        });
+    }
     
     // Remove tiles that are no longer visible
     tilesToRemove.forEach(tileID => {
@@ -290,30 +380,30 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
     
     // Update or remove existing image overlays based on background/zoom changes
     if (forceUpdate) {
+        // First, remove all existing overlays
         Object.keys(layers[task]['tileImageOverlays']).forEach(tileID => {
-            // Remove existing overlay
             if (layers[task]['tileImageOverlays'][tileID]) {
                 map.removeLayer(layers[task]['tileImageOverlays'][tileID]);
                 delete layers[task]['tileImageOverlays'][tileID];
             }
-            
-            // Re-add if conditions are right
-            if (selectedBackground !== 'solid' && zoom >= 10 && newVisibleTileIds.has(tileID)) {
-                const tileData = visibleTiles.find(item => item.feature.properties.ID === tileID);
-                if (tileData) {
-                    const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
-                    const imageOverlay = L.imageOverlay(imageURL, tileData.bounds, {
-                        opacity: 0.9,
-                        interactive: false,
-                        errorOverlayUrl: '',
-                        crossOrigin: true
-                    });
-                    
-                    imageOverlay.addTo(map);
-                    layers[task]['tileImageOverlays'][tileID] = imageOverlay;
-                }
-            }
         });
+        
+        // Then, add overlays for all currently visible tiles
+        if (selectedBackground !== 'solid' && zoom >= 10) {
+            visibleTiles.forEach(tileData => {
+                const tileID = tileData.feature.properties.ID;
+                const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
+                const imageOverlay = L.imageOverlay(imageURL, tileData.bounds, {
+                    opacity: 0.9,
+                    interactive: false,
+                    errorOverlayUrl: '',
+                    crossOrigin: true
+                });
+                
+                imageOverlay.addTo(map);
+                layers[task]['tileImageOverlays'][tileID] = imageOverlay;
+            });
+        }
     }
     
     // Update the set of visible tile IDs
@@ -589,6 +679,26 @@ biomassValuesCheckbox.addEventListener('change', function () {
 				map.removeLayer(overlay);
 			});
 			layers['biomass']['biomassImageOverlays'] = [];
+		}
+	}
+});
+
+// Add event listeners for split changes
+document.querySelectorAll('input[name="split"]').forEach(checkbox => {
+	checkbox.addEventListener('change', function() {
+		// Update all checked tasks when split selection changes
+		for (const task of checkedTasks) {
+			showVisibleTiles(task, selectedBackground, true); // force update
+		}
+	});
+});
+
+// Add event listener for train percentage dropdown
+document.getElementById('train-select').addEventListener('change', function() {
+	// Only update if train checkbox is checked
+	if (document.getElementById('train').checked) {
+		for (const task of checkedTasks) {
+			showVisibleTiles(task, selectedBackground, true); // force update
 		}
 	}
 });
