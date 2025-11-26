@@ -1,58 +1,154 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>MMEarth Map</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js'></script>
-    <link href='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css' rel='stylesheet' />
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    </style>
-</head>
-<body>
-    <div id="map"></div>
-    <script>
-        const map = new maplibregl.Map({
-            container: 'map',
-            style: {
-                version: 8,
-                sources: {
-                    'osm': {
-                        type: 'raster',
-                        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                        tileSize: 256,
-                        attribution: '© OpenStreetMap'
-                    },
-                    'titiler': {
-                        type: 'raster',
-                        tiles: ['https://titiler-app.fly.dev/cog/tiles/WebMercatorQuad/{z}/{x}/{y}?url=https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/biomass/cogs/tile_0_cog.tif&bidx=4&bidx=3&bidx=2&rescale=0,3000'],
-                        tileSize: 256,
-                        bounds: [83.224, 21.059, 83.236, 21.071] // [west, south, east, north]
-                    }
-                },
-                layers: [
-                    {
-                        id: 'osm',
-                        type: 'raster',
-                        source: 'osm'
-                    },
-                    {
-                        id: 'titiler-layer',
-                        type: 'raster',
-                        source: 'titiler',
-                        paint: {
-                            'raster-opacity': 0.8
-                        }
-                    }
-                ]
-            },
-            center: [83.230, 21.065],
-            zoom: 14
-        });
-
-        map.addControl(new maplibregl.NavigationControl());
-    </script>
-</body>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <link rel="stylesheet" href="styles.css">
+        <script src="script.js" defer></script>
+        <title>MMEarth-Bench</title>
+    </head>
+    <body>
+        <h1>MMEarth-Bench</h1>
+        <div id="map">
+            <div id="loading-overlay">
+                <div id="loading-content">
+                    <div class="loading-spinner"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+            <p id="zoom-level-display">Current zoom level: <span id="zoom-level-value">2</span></p>
+            <div id="control-panel">
+                <p class="section-header">Background</p>
+                <label>
+                    <input type="radio" name="background" id="world-map" checked>
+                    <span>Street map</span>
+                </label>
+                <label>
+                    <input type="radio" name="background" id="satellite">
+                    <span>Satellite</span>
+                </label>
+                <label>
+                    <input type="radio" name="background" id="clear">
+                    <span>Clear</span>
+                </label>
+                <hr>
+                <p class="section-header">Tasks</p>
+                <label>
+                    <input type="checkbox" name="task" id="biomass" checked>
+                    <span id="biomass-label">Biomass</span>
+                </label>
+                <label>
+                    <input type="checkbox" name="task" id="soil_nitrogen" checked>
+                    <span id="soil_nitrogen-label">Soil nitrogen</span>
+                </label>
+                <label>
+                    <input type="checkbox" name="task" id="soil_organic_carbon" checked>
+                    <span id="soil_organic_carbon-label">Soil organic carbon</span>
+                </label>
+                <label>
+                    <input type="checkbox" name="task" id="soil_pH" checked>
+                    <span id="soil_pH-label">Soil pH</span>
+                </label>
+                <label>
+                    <input type="checkbox" name="task" id="species" checked>
+                    <span id="species-label">Species</span>
+                </label>
+                <hr>
+                <p class="section-header">Splits</p>
+                <label>
+                    <input type="checkbox" name="split" id="train" checked>
+                    <span>Train</span>
+                    <select name="train-option" id="train-select">
+                        <option value="train-100" selected>100%</option>
+                        <option value="train-50">50%</option>
+                        <option value="train-5">5%</option>
+                    </select>
+                </label>
+                <label>
+                    <input type="checkbox" name="split" id="validation" checked>
+                    <span>Validation</span>
+                </label>
+                <label>
+                    <input type="checkbox" name="split" id="random-test" checked>
+                    <span>Random test</span>
+                </label>
+                <label>
+                    <input type="checkbox" name="split" id="geographic-test" checked>
+                    <span>Geographic test</span>
+                </label>
+                <hr>
+                <p class="no-bottom-margin" id="zoom-instruction">Zoom in to view the<br>modality data for the <br>tiles!</p>
+                <div id="pixel-level-modalities-container">
+                    <p class="section-header">Pixel-level data</p>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="solid" checked>
+                        <span>None</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="Sentinel2">
+                        <span>Sentinel-2</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="Sentinel1">
+                        <span>Sentinel-1</span>
+                    </label>
+                    <!-- <label>
+                        <input type="radio" name="pixel-level-modalities" id="AsterDEM-elevation">
+                        <span>Elevation</span>
+                    </label> -->
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="ETH_GCH">
+                        <span>Canopy height</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="DynamicWorld">
+                        <span>DynamicWorld</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="ESA_WorldCover">
+                        <span>ESA WorldCover</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="MSK_CLDPRB">
+                        <span>MSK CLDPRB</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="S2CLOUDLESS">
+                        <span>S2CLOUDLESS</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="SCL">
+                        <span>SCL</span>
+                    </label>
+                    <hr>
+                    <p class="no-bottom-margin">Hover over a tile to<br>view the tile-level<br>data.</p>
+                </div>
+            </div>
+            <div id="hover-panel">
+                <label id="task-value-container">
+                    <span id="task-value"></span>
+                    <div id="biomass-values-container">
+                        <input type="checkbox" id="biomass-values-checkbox">
+                        <span>Show biomass values</span>    
+                    </div>
+                </label>    
+                <hr>
+                <label id="tile-level-modalities-container">
+                    <input type="checkbox" id="tile-level-modalities-checkbox">
+                    <span>Show tile-level data</span>
+                </label>
+                <p id="tile-level-modalities-data"></p>
+            </div>
+        </div>
+        <img id="biomass-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/biomass/map_legend_biomass.png" alt="Biomass Legend" style="display: none;">
+        <img id="dynamicworld-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_dynamicworld.png" alt="DynamicWorld Legend" style="display: none;">
+        <img id="esa-worldcover-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_esa_worldcover.png" alt="ESA WorldCover Legend" style="display: none;">
+        <img id="msk-cldprb-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_msk_cldprb.png" alt="MSK_CLDPRB Legend" style="display: none;">
+        <img id="s2cloudless-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_s2cloudless.png" alt="S2CLOUDLESS Legend" style="display: none;">
+        <img id="scl-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_scl.png" alt="SCL Legend" style="display: none;">
+        <img id="eth-gch-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_eth_gch.png" alt="ETH_GCH Legend" style="display: none;">
+    </body>
 </html>
