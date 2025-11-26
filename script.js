@@ -459,19 +459,13 @@ function restoreHoverState(task, mouseLatLng) {
 
 async function loadAndDisplayTasks() {
 	const loadingText = document.getElementById('loading-text');
-	const loadingSpinner = document.querySelector('.loading-spinner');
 	
-	for (const task of checkedTasks) {
-		// Update loading text and spinner color to match task
-		const taskName = tasks[task]['title'].toLowerCase().replace(' ph', ' pH');
-		loadingText.innerText = `Loading ${taskName} tiles...`;
-		loadingText.style.color = tasks[task]['color'];
-		loadingSpinner.style.borderTopColor = tasks[task]['color'];
-		
-		await loadTaskLayers(task); // loads the task data
-		showVisibleTiles(task, selectedBackground, true); // shows the tiles for the task
-	}
+	loadingText.innerText = `Loading tiles...`;
+	loadingText.style.color = '#333';
 	
+	await Promise.all(checkedTasks.map(task => loadTaskLayers(task))); // loads all tasks in parallel for maximum speed
+
+	checkedTasks.forEach(task => showVisibleTiles(task, selectedBackground, true)); // displays all tasks after they're loaded
 	document.getElementById('loading-overlay').style.display = 'none'; 	// hides loading overlay after all tasks are loaded
 }
 
@@ -626,7 +620,6 @@ for (const task of Object.keys(tasks)) {
 document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio => {
     radio.addEventListener('change', () => {
 	selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
-	console.log(`Modality changed to: ${selectedBackground}`);
 
 	// If a non-solid background is selected, uncheck biomass values
 	if (selectedBackground !== 'solid' && biomassValuesCheckbox.checked) {
