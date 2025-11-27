@@ -684,6 +684,13 @@ tileLevelModalityCheckbox.addEventListener('change', function () {
 // add event listener for the biomass values checkbox
 biomassValuesCheckbox.addEventListener('change', function () {
 	if (biomassValuesCheckbox.checked) {
+		// If a pixel-level modality is selected, switch back to None
+		if (selectedBackground !== 'solid') {
+			document.getElementById('solid').checked = true;
+			// Trigger the change event to update selectedBackground and legends
+			document.getElementById('solid').dispatchEvent(new Event('change'));
+		}
+		
 		biomassLegend.style.display = 'block';
 		updateBiomassOverlays();
 		// Refresh biomass tiles to make them transparent
