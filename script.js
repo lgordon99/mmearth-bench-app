@@ -43,6 +43,8 @@ const mskCldprbLegend = document.getElementById('msk-cldprb-legend');
 const s2cloudlessLegend = document.getElementById('s2cloudless-legend');
 const sclLegend = document.getElementById('scl-legend');
 const ethGchLegend = document.getElementById('eth-gch-legend');
+const speciesSelect = document.getElementById('species-select');
+let speciesLabels = {}; // Will store the species name to index mapping
 let hoveredTileBounds = null;
 let selectedBackground = document.querySelector('input[name="pixel-level-modalities"]:checked').id;
 let checkedTasks = Array.from(document.querySelectorAll('input[name="task"]:checked')).map(checkbox => checkbox.id);
@@ -265,7 +267,6 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
 
     if (!tilesWithBounds) return; // if the data isn't ready yet, return
 
-    // Get selected split indices
     const selectedIndices = getSelectedSplitIndices(task);
     
     // Get currently visible tile IDs, filtered by split
@@ -280,6 +281,19 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
             // Filter by selected split indices
             visibleTiles = visibleTiles.filter(item => selectedIndices.has(item.index));
         }
+    }
+    
+    // Filter by species if a specific species is selected (only for species task)
+    if (task === 'species' && speciesSelect && speciesSelect.value && speciesSelect.value !== 'all') {
+        const selectedSpecies = speciesSelect.value;
+        visibleTiles = visibleTiles.filter(item => {
+            const tileSpecies = item.feature.properties.species;
+            // Check if the selected species is in the tile's species array
+            if (Array.isArray(tileSpecies)) {
+                return tileSpecies.includes(selectedSpecies);
+            }
+            return false;
+        });
     }
     
     const newVisibleTileIds = new Set(visibleTiles.map(item => item.feature.properties.ID));
@@ -406,8 +420,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
         }
     }
     
-    // Update the set of visible tile IDs
-    layers[task]['visibleTileIds'] = newVisibleTileIds;
+    layers[task]['visibleTileIds'] = newVisibleTileIds; // updates the set of visible tile IDs
     
     // Restore hover state if needed
     if (zoom >= 10 && lastMouseLatLng && isHovering) {
@@ -459,7 +472,6 @@ function restoreHoverState(task, mouseLatLng) {
 
 async function loadAndDisplayTasks() {
 	const loadingText = document.getElementById('loading-text');
-	
 	loadingText.innerText = `Loading tiles...`;
 	loadingText.style.color = '#333';
 	
@@ -508,8 +520,6 @@ function hideHoverPanel() {
     hoverPanel.style.display = 'none';
 	biomassValuesContainer.style.display = 'none';
 	isHovering = false;
-	
-	// Clear any pending hide timeout
 	cancelPendingHide();
 }
 
@@ -533,7 +543,37 @@ map.createPane('hoverPanelPane');
 map.getPane('hoverPanelPane').style.zIndex = 650; // higher z-index for tooltips
 map.getPane('hoverPanelPane').style.pointerEvents = 'all';
 
-loadAndDisplayTasks();
+// Load species labels and populate dropdown
+async function loadSpeciesLabels() {
+	if (!speciesSelect) {
+		console.error('Species select element not found');
+		return;
+	}
+	
+	try {
+		const response = await fetch('https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/species/species_labels.json');
+		speciesLabels = await response.json();
+		
+		// Populate the dropdown with species in order
+		const speciesNames = Object.keys(speciesLabels);
+		speciesNames.forEach(speciesName => {
+			const option = document.createElement('option');
+			option.value = speciesName;
+			option.textContent = speciesName;
+			speciesSelect.appendChild(option);
+		});
+	} catch (error) {
+		console.error('Error loading species labels:', error);
+	}
+}
+
+// Load species labels first, then load tasks
+(async function init() {
+	await loadSpeciesLabels();
+	await loadAndDisplayTasks();
+})().catch(error => {
+	console.error('Error during initialization:', error);
+});
 
 // Track if we're currently hovering
 let isHovering = false;
@@ -733,6 +773,16 @@ document.getElementById('train-select').addEventListener('change', function() {
 		}
 	}
 });
+
+// Add event listener for species dropdown
+if (speciesSelect) {
+	speciesSelect.addEventListener('change', function() {
+		// Only update the species task if it's checked
+		if (checkedTasks.includes('species') && layers['species']) {
+			showVisibleTiles('species', selectedBackground, true); // force update
+		}
+	});
+}
 
 // Use requestAnimationFrame for smoother updates with throttling
 function rafThrottle(func) {

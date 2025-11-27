@@ -273,6 +273,11 @@ h1 {
     background-position: right center;
 }
 
+#species-select {
+    margin-left: 0;
+    width: 100%;
+}
+
 #biomass-label {
     color: green;
 }
