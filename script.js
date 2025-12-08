@@ -234,10 +234,22 @@ async function loadTaskLayers(task) {
 
 	// Pre-calculate bounds for all tiles to avoid recalculating during panning
 	const tilesWithBounds = data.features.map((tile, index) => {
-		const geoJson = L.geoJson(tile);
+		// Extract bounds directly from geometry coordinates (more efficient than creating GeoJSON layer)
+		const coords = tile.geometry.coordinates[0]; // Get the outer ring
+		let minLat = Infinity, maxLat = -Infinity;
+		let minLng = Infinity, maxLng = -Infinity;
+		
+		coords.forEach(coord => {
+			const [lng, lat] = coord;
+			if (lat < minLat) minLat = lat;
+			if (lat > maxLat) maxLat = lat;
+			if (lng < minLng) minLng = lng;
+			if (lng > maxLng) maxLng = lng;
+		});
+		
 		return {
 			feature: tile,
-			bounds: geoJson.getBounds(),
+			bounds: L.latLngBounds([[minLat, minLng], [maxLat, maxLng]]), // Create Leaflet LatLngBounds object
 			index: index // Store original index for split filtering
 		};
 	});
