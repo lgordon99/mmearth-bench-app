@@ -892,6 +892,13 @@ const throttledZoomUpdate = throttle(() => {
 		sclLegend.style.display = 'none';
 		ethGchLegend.style.display = 'none';
 		
+		// Uncheck "Show biomass values" checkbox - this will trigger the change event
+		// which hides the legend and removes overlays
+		if (biomassValuesCheckbox.checked) {
+			biomassValuesCheckbox.checked = false;
+			biomassValuesCheckbox.dispatchEvent(new Event('change'));
+		}
+		
 		// Reset to solid background if pixel-level modality was selected
 		if (selectedBackground !== 'solid') {
 			selectedBackground = 'solid';

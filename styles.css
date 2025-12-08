@@ -327,6 +327,9 @@ hr {
     pointer-events: auto;
     max-height: none;
     overflow-y: auto; /* Enable vertical scrolling when necessary */
+    font-family: livvic;
+    font-size: 11px;
+    font-weight: bold;
 }
 
 #hover-panel label {
