@@ -413,3 +413,21 @@ hr {
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
 }
+
+.leaflet-control-scale {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-family: livvic !important;
+    font-size: 11px !important;
+    margin-bottom: 10px !important;
+    margin-left: 10px !important;
+}
+
+.leaflet-control-scale-line {
+    border: 2px solid rgba(0, 0, 0, 0.5) !important;
+    border-top: none !important;
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: #333 !important;
+    font-weight: bold !important;
+}

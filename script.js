@@ -1,8 +1,27 @@
 let map = L.map('map', {
 	fadeAnimation: false, // makes tiles appear instantly, not with a fade-in
 	zoomAnimation: true, // keeps zoom animation
-	markerZoomAnimation: false // prevents markers from zooming in and out with the map
+	markerZoomAnimation: false, // prevents markers from zooming in and out with the map
+	maxBounds: L.latLngBounds([[-90, -180], [90, 180]]), // restrict panning to world bounds
+	maxBoundsViscosity: 1.0, // prevent dragging past edges (1.0 = strict enforcement)
+	worldCopyJump: false // prevent jumping to world copy when panning
 }).setView([0, 0], 2); // sets center and initial zoom
+
+// Add scale control in bottom left corner
+L.control.scale({
+	position: 'bottomleft',
+	imperial: false, // metric only
+	maxWidth: 200
+}).addTo(map);
+
+// Prevent dragging past map edges by constraining during drag
+map.on('drag', function() {
+	const maxBounds = map.options.maxBounds;
+	if (maxBounds) {
+		// Constrain the map to stay within bounds during dragging
+		map.panInsideBounds(maxBounds, { animate: false });
+	}
+});
 
 // Backgrounds
 let Stadia_OSMBright = L.tileLayer('https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.{ext}', {
