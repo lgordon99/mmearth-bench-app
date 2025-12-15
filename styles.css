@@ -5,13 +5,14 @@ body {
 #map {
     width: 90%;
     height: 700px;
-    border: 1px solid black;
+    border-radius: 12px;
     margin: 0 auto;
     transform: translateZ(0); /* Force GPU acceleration */
     will-change: transform; /* Hint browser about upcoming changes */
     backface-visibility: hidden; /* Improve rendering performance */
     -webkit-backface-visibility: hidden; /* Safari support */
     perspective: 1000px; /* Enable 3D transforms for better performance */
+    overflow: hidden; /* Ensure map content respects rounded corners */
 }
 
 #biomass-legend {
@@ -310,6 +311,7 @@ hr {
 #hover-panel {
     display: none; /* Hide by default */
     position: absolute;
+    box-sizing: border-box; /* Include padding and border in width/height */
     background: rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -319,8 +321,8 @@ hr {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     z-index: 1000;
     pointer-events: auto;
-    max-height: none;
-    overflow-y: auto; /* Enable vertical scrolling when necessary */
+    overflow-y: scroll; /* Always show scrollbar for scrolling */
+    overflow-x: hidden;
     font-family: livvic;
     font-size: 11px;
     font-weight: bold;
