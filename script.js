@@ -169,14 +169,28 @@ function updateBiomassOverlays() {
 }
 
 function preventHoverPanelSpill() {
-	const panelRect = hoverPanel.getBoundingClientRect(); // gets panel dimensions
-	const availableSpaceBelow = viewportHeight - panelRect.top - 40;
-
-	if (panelRect.height > availableSpaceBelow) { // if the panel spills off the bottom of the screen
-        hoverPanel.style.maxHeight = `${availableSpaceBelow}px`;
-    } else {
-        hoverPanel.style.maxHeight = 'none'; // resets height if there's enough space
-    }
+	// Get map dimensions and viewport height
+	const mapRect = document.getElementById('map').getBoundingClientRect();
+	const viewportHeight = window.innerHeight;
+	
+	// Get current top position from style (parse '123px' to 123)
+	const currentTop = parseInt(hoverPanel.style.top) || 0;
+	
+	// Calculate panel's top position relative to viewport
+	// panelTop_viewport = mapTop_viewport + panelTop_relative_to_map
+	const panelTopViewport = mapRect.top + currentTop;
+	
+	// Calculate available space from panel top to bottom of map (or viewport, whichever is smaller)
+	// Subtract 20px buffer
+	const bottomBoundary = Math.min(mapRect.bottom, viewportHeight) - 20;
+	
+	// Calculate available height
+	const availableHeight = bottomBoundary - panelTopViewport;
+	
+	// Apply max-height (box-sizing: border-box in CSS handles padding/border)
+	if (availableHeight > 0) {
+		hoverPanel.style.setProperty('max-height', `${availableHeight}px`, 'important');
+	}
 }
 
 function showHoverPanel(e, taskData, tileLevelData) {
@@ -610,6 +624,7 @@ async function loadSpeciesLabels() {
 let isHovering = false;
 let lastMouseLatLng = null;
 let hideTimeout = null; // Timeout for delayed hide
+let isMouseOverPanel = false; // Track if mouse is over the hover panel
 
 // Helper function to cancel any pending hide timeout
 function cancelPendingHide() {
@@ -638,14 +653,17 @@ map.on('mousemove', function(e) { // whenever the mouse moves
 		if (hoveredTileBounds.contains(e.latlng)) {
 			// Still within bounds, update position
 			moveHoverPanel();
-		} else {
-			// Mouse has left the tile bounds
+		} else if (!isMouseOverPanel) {
+			// Mouse has left the tile bounds and is not over the panel
 			// Use a delay to prevent flashing when moving between adjacent tiles
 			if (!hideTimeout) {
 				hideTimeout = setTimeout(() => {
-					hideHoverPanel();
-					hoveredTileBounds = null;
-					isHovering = false;
+					// Only hide if mouse is still not over the panel
+					if (!isMouseOverPanel) {
+						hideHoverPanel();
+						hoveredTileBounds = null;
+						isHovering = false;
+					}
 					hideTimeout = null;
 				}, 150);
 			}
@@ -737,10 +755,41 @@ document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio 
 
 hoverPanel.addEventListener('mouseenter', function () {
     map.scrollWheelZoom.disable(); // disables scroll zoom on the map
+    isMouseOverPanel = true; // Mark that mouse is over the panel
+    cancelPendingHide(); // Cancel any pending hide timeout
 });
+
+// Allow scrolling within the hover panel by manually scrolling it
+// This bypasses any event capture issues with Leaflet
+hoverPanel.addEventListener('wheel', function(e) {
+    // Manually scroll the panel
+    hoverPanel.scrollTop += e.deltaY;
+    
+    // Prevent the event from doing anything else (like zooming the map)
+    e.preventDefault();
+    e.stopPropagation();
+}, { passive: false });
 
 hoverPanel.addEventListener('mouseleave', function () {
     map.scrollWheelZoom.enable(); // enables scroll zoom on the map
+    isMouseOverPanel = false; // Mark that mouse has left the panel
+    
+    // Check if mouse is still over the tile, if not, hide the panel
+    if (hoveredTileBounds && lastMouseLatLng) {
+        if (!hoveredTileBounds.contains(lastMouseLatLng)) {
+            // Mouse is neither over the tile nor the panel, hide after a short delay
+            if (!hideTimeout) {
+                hideTimeout = setTimeout(() => {
+                    if (!isMouseOverPanel && (!hoveredTileBounds || !hoveredTileBounds.contains(lastMouseLatLng))) {
+                        hideHoverPanel();
+                        hoveredTileBounds = null;
+                        isHovering = false;
+                    }
+                    hideTimeout = null;
+                }, 150);
+            }
+        }
+    }
 });
 
 // add event listener for the tile level modality checkbox
@@ -750,6 +799,7 @@ tileLevelModalityCheckbox.addEventListener('change', function () {
     } else {
         tileLevelModalities.style.display = 'none';
     }
+    preventHoverPanelSpill(); // Recalculate max height when content changes
 });
 
 // add event listener for the biomass values checkbox
