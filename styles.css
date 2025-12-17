@@ -3,6 +3,7 @@ body {
 }
 
 #map {
+    position: relative; /* Allow absolute positioning of child elements */
     width: 90%;
     height: 700px;
     border-radius: 12px;
@@ -15,75 +16,25 @@ body {
     overflow: hidden; /* Ensure map content respects rounded corners */
 }
 
-#biomass-legend {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 600px;
-    max-height: 150px;
-    z-index: 1000;
-}
-
-#dynamicworld-legend {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 600px;
-    max-height: 150px;
-    z-index: 1000;
-}
-
-#esa-worldcover-legend {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 600px;
-    max-height: 150px;
-    z-index: 1000;
-}
-
-#msk-cldprb-legend {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 600px;
-    max-height: 150px;
-    z-index: 1000;
-}
-
-#s2cloudless-legend {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 600px;
-    max-height: 150px;
-    z-index: 1000;
-}
-
-#scl-legend {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: 600px;
-    max-height: 150px;
-    z-index: 1000;
-}
-
+#biomass-legend,
+#dynamicworld-legend,
+#esa-worldcover-legend,
+#msk-cldprb-legend,
+#s2cloudless-legend,
+#scl-legend,
 #eth-gch-legend {
-    position: fixed;
+    position: absolute;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     max-width: 600px;
-    max-height: 150px;
+    max-height: calc(100% - 40px); /* Map height minus bottom padding and some margin */
+    height: auto;
+    width: auto;
+    display: block;
     z-index: 1000;
 }
+
 
 #zoom-level-display {
     position: absolute;
