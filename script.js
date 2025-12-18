@@ -181,12 +181,26 @@ function preventHoverPanelSpill() {
 	// panelTop_viewport = mapTop_viewport + panelTop_relative_to_map
 	const panelTopViewport = mapRect.top + currentTop;
 	
-	// Calculate available space from panel top to bottom of map (or viewport, whichever is smaller)
-	// Subtract 20px buffer
-	const bottomBoundary = Math.min(mapRect.bottom, viewportHeight) - 20;
+	// Check if any legend is visible and calculate available space above it
+	let bottomBoundary = Math.min(mapRect.bottom, viewportHeight) - 20;
+	const visibleLegends = document.querySelectorAll('.legend');
+	visibleLegends.forEach(legend => {
+		if (legend.style.display !== 'none' && legend.offsetParent !== null) {
+			const legendRect = legend.getBoundingClientRect();
+			// Calculate legend's top position relative to map
+			const legendTopRelativeToMap = legendRect.top - mapRect.top;
+			// If legend is visible and below the hover panel
+			if (legendTopRelativeToMap > currentTop) {
+				// Use the legend's top as the boundary (with buffer)
+				const legendBoundary = legendTopRelativeToMap - 10; // 10px buffer above legend
+				// Use the smaller boundary (legend top or map bottom)
+				bottomBoundary = Math.min(bottomBoundary, legendBoundary);
+			}
+		}
+	});
 	
-	// Calculate available height
-	const availableHeight = bottomBoundary - panelTopViewport;
+	// Calculate available height from panel top to boundary
+	const availableHeight = bottomBoundary - currentTop;
 	
 	// Apply max-height (box-sizing: border-box in CSS handles padding/border)
 	if (availableHeight > 0) {

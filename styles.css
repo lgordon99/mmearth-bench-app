@@ -294,6 +294,7 @@ hr {
 
 #biomass-values-container {
     display: none;
+    align-items: center;
 }
 
 #task-value-container input[type="checkbox"] {
