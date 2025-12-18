@@ -16,13 +16,7 @@ body {
     overflow: hidden; /* Ensure map content respects rounded corners */
 }
 
-#biomass-legend,
-#dynamicworld-legend,
-#esa-worldcover-legend,
-#msk-cldprb-legend,
-#s2cloudless-legend,
-#scl-legend,
-#eth-gch-legend {
+.legend {
     position: absolute;
     bottom: 20px;
     left: 50%;
@@ -222,6 +216,8 @@ body {
 #species-select {
     margin-left: 0;
     width: 100%;
+    font-family: livvic;
+    font-weight: bold;
 }
 
 #biomass-label {

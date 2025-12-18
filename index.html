@@ -101,10 +101,10 @@
                         <input type="radio" name="pixel-level-modalities" id="Sentinel1">
                         <span>Sentinel-1</span>
                     </label>
-                    <!-- <label>
-                        <input type="radio" name="pixel-level-modalities" id="AsterDEM-elevation">
+                    <label>
+                        <input type="radio" name="pixel-level-modalities" id="ASTER_GDEM">
                         <span>Elevation</span>
-                    </label> -->
+                    </label>
                     <label>
                         <input type="radio" name="pixel-level-modalities" id="ETH_GCH">
                         <span>Canopy height</span>
@@ -148,13 +148,15 @@
                 </label>
                 <p id="tile-level-modalities-data"></p>
             </div>
-            <img id="biomass-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/biomass/map_legend_biomass.png" alt="Biomass Legend" style="display: none;">
-            <img id="dynamicworld-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_dynamicworld.png" alt="DynamicWorld Legend" style="display: none;">
-            <img id="esa-worldcover-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_esa_worldcover.png" alt="ESA WorldCover Legend" style="display: none;">
-            <img id="msk-cldprb-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_msk_cldprb.png" alt="MSK_CLDPRB Legend" style="display: none;">
-            <img id="s2cloudless-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_s2cloudless.png" alt="S2CLOUDLESS Legend" style="display: none;">
-            <img id="scl-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_scl.png" alt="SCL Legend" style="display: none;">
-            <img id="eth-gch-legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/map_legend_eth_gch.png" alt="ETH_GCH Legend" style="display: none;">
+            <img id="biomass-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_biomass.png" alt="Biomass Legend" style="display: none;">
+            <img id="sentinel1-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_sentinel1.png" alt="Sentinel-1 Legend" style="display: none;">
+            <img id="astergdem-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_aster_gdem.png" alt="AsterGDEM Legend" style="display: none;">
+            <img id="dynamicworld-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_dynamicworld.png" alt="DynamicWorld Legend" style="display: none;">
+            <img id="esa-worldcover-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_esa_worldcover.png" alt="ESA WorldCover Legend" style="display: none;">
+            <img id="msk-cldprb-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_msk_cldprb.png" alt="MSK_CLDPRB Legend" style="display: none;">
+            <img id="s2cloudless-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_s2cloudless.png" alt="S2CLOUDLESS Legend" style="display: none;">
+            <img id="scl-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_scl.png" alt="SCL Legend" style="display: none;">
+            <img id="eth-gch-legend" class="legend" src="https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/legends/map_legend_eth_gch.png" alt="ETH_GCH Legend" style="display: none;">
         </div>
     </body>
 </html>

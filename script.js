@@ -47,8 +47,6 @@ const viewportHeight = window.innerHeight;
 const zoomInstruction = document.getElementById('zoom-instruction');
 const zoomLevelValue = document.getElementById('zoom-level-value');
 const pixelLevelModalitiesContainer = document.getElementById('pixel-level-modalities-container');
-// const pixelLevelModalities = ['Sentinel-2','Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover']
-// const pixelLevelModalities =['Sentinel2', 'Sentinel-1', 'AsterDEM-elevation', 'ETHGCH-canopy-height', 'DynamicWorld', 'ESA-Worldcover', 'MSK_CLDPRB', 'S2CLOUDLESS']
 const pixelLevelModalities =['Sentinel2', 'Sentinel1', 'ETH_GCH', 'DynamicWorld', 'ESA_WorldCover', 'MSK_CLDPRB', 'S2CLOUDLESS', 'SCL']
 const hoverPanel = document.getElementById('hover-panel');
 const taskValue = document.getElementById('task-value');
@@ -58,6 +56,8 @@ const biomassValuesContainer = document.getElementById('biomass-values-container
 const biomassValuesCheckbox = document.getElementById('biomass-values-checkbox');
 const biomassLegend = document.getElementById('biomass-legend');
 const dynamicWorldLegend = document.getElementById('dynamicworld-legend');
+const asterGdemLegend = document.getElementById('astergdem-legend');
+const sentinel1Legend = document.getElementById('sentinel1-legend');
 const esaWorldCoverLegend = document.getElementById('esa-worldcover-legend');
 const mskCldprbLegend = document.getElementById('msk-cldprb-legend');
 const s2cloudlessLegend = document.getElementById('s2cloudless-legend');
@@ -726,16 +726,17 @@ document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio 
 	}
 
 	// Hide all legends first
-	dynamicWorldLegend.style.display = 'none';
-	esaWorldCoverLegend.style.display = 'none';
-	mskCldprbLegend.style.display = 'none';
-	s2cloudlessLegend.style.display = 'none';
-	sclLegend.style.display = 'none';
-	ethGchLegend.style.display = 'none';
+	document.querySelectorAll('.legend').forEach(legend => {
+		legend.style.display = 'none';
+	});
 	
 	// Show the appropriate legend
 	if (selectedBackground === 'DynamicWorld') {
 		dynamicWorldLegend.style.display = 'block';
+	} else if (selectedBackground === 'ASTER_GDEM') {
+		asterGdemLegend.style.display = 'block';
+	} else if (selectedBackground === 'Sentinel1') {
+		sentinel1Legend.style.display = 'block';
 	} else if (selectedBackground === 'ESA_WorldCover') {
 		esaWorldCoverLegend.style.display = 'block';
 	} else if (selectedBackground === 'MSK_CLDPRB') {
@@ -967,12 +968,9 @@ const throttledZoomUpdate = throttle(() => {
 		isHovering = false;
 		
 		// Hide all modality legends when zooming out
-		dynamicWorldLegend.style.display = 'none';
-		esaWorldCoverLegend.style.display = 'none';
-		mskCldprbLegend.style.display = 'none';
-		s2cloudlessLegend.style.display = 'none';
-		sclLegend.style.display = 'none';
-		ethGchLegend.style.display = 'none';
+		document.querySelectorAll('.legend').forEach(legend => {
+			legend.style.display = 'none';
+		});
 		
 		// Uncheck "Show biomass values" checkbox - this will trigger the change event
 		// which hides the legend and removes overlays
