@@ -48,6 +48,7 @@ const zoomInstruction = document.getElementById('zoom-instruction');
 const zoomLevelValue = document.getElementById('zoom-level-value');
 const pixelLevelModalitiesContainer = document.getElementById('pixel-level-modalities-container');
 const pixelLevelModalities =['Sentinel2', 'Sentinel1', 'ETH_GCH', 'DynamicWorld', 'ESA_WorldCover', 'MSK_CLDPRB', 'S2CLOUDLESS', 'SCL']
+const PIXEL_LEVEL_ZOOM_THRESHOLD = 10; // Zoom level at which pixel-level modalities are shown
 const hoverPanel = document.getElementById('hover-panel');
 const taskValue = document.getElementById('task-value');
 const tileLevelModalities = document.getElementById('tile-level-modalities-data');
@@ -418,7 +419,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
             onEachFeature: function(feature, layer) {
                 layer.on({
                     mouseover: function(e) {
-                        if (map.getZoom() < 10) return;
+                        if (map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
                         
                         cancelPendingHide();
                         
@@ -438,7 +439,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
         layers[task]['tileLayers'][tileID] = tileLayer;
         
         // Add pixel-level modality image overlay if needed
-        if (selectedBackground !== 'solid' && zoom >= 10) {
+        if (selectedBackground !== 'solid' && zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
             const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
             const imageOverlay = L.imageOverlay(imageURL, bounds, {
                 opacity: 0.9,
@@ -463,7 +464,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
         });
         
         // Then, add overlays for all currently visible tiles
-        if (selectedBackground !== 'solid' && zoom >= 10) {
+        if (selectedBackground !== 'solid' && zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
             visibleTiles.forEach(tileData => {
                 const tileID = tileData.feature.properties.ID;
                 const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
@@ -483,9 +484,9 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
     layers[task]['visibleTileIds'] = newVisibleTileIds; // updates the set of visible tile IDs
     
     // Restore hover state if needed
-    if (zoom >= 10 && lastMouseLatLng && isHovering) {
+    if (zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD && lastMouseLatLng && isHovering) {
         setTimeout(() => {
-            if (map.getZoom() >= 10 && lastMouseLatLng) {
+            if (map.getZoom() >= PIXEL_LEVEL_ZOOM_THRESHOLD && lastMouseLatLng) {
                 restoreHoverState(task, lastMouseLatLng);
             }
         }, 20);
@@ -493,7 +494,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
 }
 
 function restoreHoverState(task, mouseLatLng) {
-    if (!layers[task]['tileLayers'] || map.getZoom() < 10) return;
+    if (!layers[task]['tileLayers'] || map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
     cancelPendingHide();
     
     // Check each individual tile layer
@@ -653,8 +654,8 @@ map.on('mousemove', function(e) { // whenever the mouse moves
 	const zoom = map.getZoom();
 	lastMouseLatLng = e.latlng; // Store last mouse position
 	
-	// Only handle hover if zoom level is >= 10
-	if (zoom < 10) {
+	// Only handle hover if zoom level is >= PIXEL_LEVEL_ZOOM_THRESHOLD
+	if (zoom < PIXEL_LEVEL_ZOOM_THRESHOLD) {
 		if (hoveredTileBounds) {
 			hideHoverPanel();
 			hoveredTileBounds = null;
@@ -708,6 +709,60 @@ const controlPanel = document.getElementById('control-panel');
 const controlPanelToggle = document.getElementById('control-panel-toggle');
 
 // Function to sync toggle width with control panel and position control panel below toggle
+function preventControlPanelOverlap() {
+	if (!controlPanel || !controlPanel.classList.contains('visible')) {
+		return; // Only check when visible
+	}
+	
+	// Get map dimensions and viewport height
+	const mapRect = document.getElementById('map').getBoundingClientRect();
+	const viewportHeight = window.innerHeight;
+	
+	// Get control panel position
+	const panelRect = controlPanel.getBoundingClientRect();
+	const panelTop = panelRect.top - mapRect.top; // Top relative to map
+	
+	// Find Leaflet attribution control (typically at bottom-right)
+	const attributionControl = document.querySelector('.leaflet-control-attribution');
+	let bottomBoundary = Math.min(mapRect.bottom, viewportHeight) - 20; // 20px buffer from bottom
+	
+	// Check if attribution control exists and is visible
+	if (attributionControl && attributionControl.offsetParent !== null) {
+		const attributionRect = attributionControl.getBoundingClientRect();
+		const attributionTopRelativeToMap = attributionRect.top - mapRect.top;
+		
+		// If attribution is below the control panel, use it as boundary
+		if (attributionTopRelativeToMap > panelTop) {
+			bottomBoundary = Math.min(bottomBoundary, attributionTopRelativeToMap - 10); // 10px buffer above attribution
+		}
+	}
+	
+	// Calculate available height from panel top to boundary
+	const availableHeight = bottomBoundary - panelTop;
+	
+	// Get the natural height of the control panel (when not restricted)
+	// Temporarily remove max-height to measure natural height
+	const currentMaxHeight = controlPanel.style.maxHeight;
+	controlPanel.style.maxHeight = 'none';
+	const naturalHeight = controlPanel.scrollHeight;
+	// Restore the original max-height style (or remove if it was empty)
+	if (currentMaxHeight) {
+		controlPanel.style.maxHeight = currentMaxHeight;
+	} else {
+		controlPanel.style.removeProperty('max-height');
+	}
+	
+	// If natural height exceeds available space, restrict and make scrollable
+	if (naturalHeight > availableHeight && availableHeight > 0) {
+		controlPanel.style.setProperty('max-height', `${availableHeight}px`, 'important');
+		controlPanel.classList.add('scrollable');
+	} else {
+		// Remove max-height restriction (let CSS class handle it) and scrollable class if not needed
+		controlPanel.style.removeProperty('max-height');
+		controlPanel.classList.remove('scrollable');
+	}
+}
+
 function syncToggleWidth() {
 	if (controlPanelToggle && controlPanel) {
 		// Temporarily make control panel visible to measure width if it's hidden
@@ -716,12 +771,20 @@ function syncToggleWidth() {
 			controlPanel.style.visibility = 'hidden';
 			controlPanel.style.maxHeight = 'none';
 			controlPanel.style.opacity = '1';
+			controlPanel.style.display = 'block';
 		}
 		
-		// Get control panel width
+		// Force a layout recalculation by reading offsetWidth
+		controlPanel.offsetWidth;
+		
+		// Get control panel width (including padding and border due to box-sizing: border-box)
 		const panelWidth = controlPanel.offsetWidth;
-		// Set toggle width to match
-		controlPanelToggle.style.width = panelWidth + 'px';
+		
+		// Set toggle width to match (only if we got a valid width)
+		if (panelWidth > 0) {
+			controlPanelToggle.style.width = panelWidth + 'px';
+		}
+		
 		// Position control panel directly below toggle
 		const toggleHeight = controlPanelToggle.offsetHeight;
 		controlPanel.style.top = (10 + toggleHeight) + 'px';
@@ -731,6 +794,7 @@ function syncToggleWidth() {
 			controlPanel.style.visibility = '';
 			controlPanel.style.maxHeight = '';
 			controlPanel.style.opacity = '';
+			controlPanel.style.display = '';
 		}
 	}
 }
@@ -752,37 +816,78 @@ if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
 		controlPanel.style.maxHeight = 'none';
 		controlPanel.style.opacity = '1';
 		controlPanel.style.visibility = 'visible';
+		controlPanel.style.display = 'block'; // Ensure it's displayed for measurement
 		
-		// Use double requestAnimationFrame to ensure layout is calculated
+		// Force a layout recalculation by reading offsetWidth
+		controlPanel.offsetWidth;
+		
+		// Use multiple requestAnimationFrame calls to ensure layout is fully calculated
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
-				syncToggleWidth();
-				
-				// Now restore transitions and set initial state
-				controlPanel.style.transition = '';
-				controlPanel.style.visibility = '';
-				controlPanel.style.maxHeight = '';
-				controlPanel.style.opacity = '';
-				
-				// Set initial state based on which button is active
-				if (showMenuBtn.classList.contains('active')) {
-					controlPanel.classList.add('visible');
-				} else {
-					// Ensure it starts hidden if hide is active
-					controlPanel.classList.remove('visible');
-				}
+				requestAnimationFrame(() => {
+					// Measure and sync width
+					syncToggleWidth();
+					
+					// Now restore transitions and set initial state
+					controlPanel.style.transition = '';
+					controlPanel.style.visibility = '';
+					controlPanel.style.maxHeight = '';
+					controlPanel.style.opacity = '';
+					
+					// Set initial state based on which button is active
+					if (showMenuBtn.classList.contains('active')) {
+						controlPanel.classList.add('visible');
+						// Check for overlap after a short delay to ensure layout is complete
+						setTimeout(() => {
+							preventControlPanelOverlap();
+						}, 450);
+					} else {
+						// Ensure it starts hidden if hide is active
+						controlPanel.style.display = 'none';
+						controlPanel.classList.remove('visible');
+					}
+				});
 			});
 		});
 	}
 	
+	// Allow scrolling within the control panel when it's scrollable
+	controlPanel.addEventListener('wheel', function(e) {
+		if (controlPanel.classList.contains('scrollable')) {
+			// Manually scroll the panel
+			controlPanel.scrollTop += e.deltaY;
+			
+			// Prevent the event from doing anything else (like zooming the map)
+			e.preventDefault();
+			e.stopPropagation();
+		}
+	}, { passive: false });
+	
+	// Wait for both DOM and window load to ensure everything is rendered
+	function waitForFullLoad() {
+		if (document.readyState === 'complete') {
+			// Use a small delay to ensure all styles are applied
+			setTimeout(initializeControlPanel, 0);
+		} else {
+			window.addEventListener('load', () => {
+				setTimeout(initializeControlPanel, 0);
+			});
+		}
+	}
+	
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initializeControlPanel);
+		document.addEventListener('DOMContentLoaded', waitForFullLoad);
 	} else {
-		initializeControlPanel();
+		waitForFullLoad();
 	}
 	
 	// Sync on window resize
-	window.addEventListener('resize', syncToggleWidth);
+	window.addEventListener('resize', () => {
+		syncToggleWidth();
+		if (controlPanel.classList.contains('visible')) {
+			preventControlPanelOverlap();
+		}
+	});
 	
 	// Sync width after control panel is shown
 	showMenuBtn.addEventListener('click', function() {
@@ -792,6 +897,10 @@ if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
 		// Sync width and position after display change
 		requestAnimationFrame(() => {
 			syncToggleWidth();
+			// Check for overlap after animation completes
+			setTimeout(() => {
+				preventControlPanelOverlap();
+			}, 450); // Slightly longer than animation duration (400ms)
 		});
 	});
 	
@@ -996,8 +1105,8 @@ function rafThrottle(func) {
 				const now = Date.now();
 				// Only execute if enough time has passed (200ms) to prevent blinking
 				if (now - lastCall >= 200) {
-					// Don't update layers if user is hovering at zoom >= 10
-					if (!(isHovering && map.getZoom() >= 10)) {
+					// Don't update layers if user is hovering at zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD
+					if (!(isHovering && map.getZoom() >= PIXEL_LEVEL_ZOOM_THRESHOLD)) {
 						func(...lastArgs);
 						lastCall = now;
 					}
@@ -1054,11 +1163,11 @@ let wasBackgroundReset = false;
 // Use throttle for zoom events (less frequent, but still responsive)
 const throttledZoomUpdate = throttle(() => {
 	const zoom = map.getZoom();
-	const crossedThreshold = (previousZoom < 10 && zoom >= 10) || (previousZoom >= 10 && zoom < 10);
+	const crossedThreshold = (previousZoom < PIXEL_LEVEL_ZOOM_THRESHOLD && zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) || (previousZoom >= PIXEL_LEVEL_ZOOM_THRESHOLD && zoom < PIXEL_LEVEL_ZOOM_THRESHOLD);
 	let forceUpdate = crossedThreshold;
 	
 	// Show/hide pixel-level modalities based on zoom level
-	if (zoom >= 10) {
+	if (zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
 		pixelLevelModalitiesContainer.style.display = 'block';
 		zoomInstruction.style.display = 'none';
 		
@@ -1073,7 +1182,7 @@ const throttledZoomUpdate = throttle(() => {
 			moveHoverPanel();
 		}
 	} else {
-		// Hide pixel-level modalities and hover panel below zoom 10
+		// Hide pixel-level modalities and hover panel below PIXEL_LEVEL_ZOOM_THRESHOLD
 		pixelLevelModalitiesContainer.style.display = 'none';
 		zoomInstruction.style.display = 'block';
 		
@@ -1122,7 +1231,7 @@ map.on('zoom', updateZoomLevel); // Update zoom level display during zoom animat
 updateZoomLevel();
 
 // Initialize pixel-level modalities visibility based on current zoom
-if (map.getZoom() >= 10) {
+if (map.getZoom() >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
 	pixelLevelModalitiesContainer.style.display = 'block';
 	zoomInstruction.style.display = 'none';
 } else {

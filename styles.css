@@ -31,6 +31,7 @@ body {
 
 
 #zoom-level-display {
+    display: none; /* Hidden for now */
     position: absolute;
     top: 10px;
     left: 10px;
@@ -185,6 +186,11 @@ body {
     opacity: 1;
     padding: 5px;
     transition: max-height 0.4s ease-in-out, opacity 0.2s ease-in-out, padding-top 0.4s ease-in-out, padding-bottom 0.4s ease-in-out;
+}
+
+#control-panel.visible.scrollable {
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 #control-panel p {
@@ -388,7 +394,8 @@ hr {
     border-radius: 12px !important;
     overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-    margin-top: 55px !important;
+    margin-top: 10px !important;
+    margin-left: 10px !important;
 }
 
 .leaflet-control-zoom a {
