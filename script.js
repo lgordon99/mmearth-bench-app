@@ -987,6 +987,12 @@ if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
 		controlPanelTouchStartY = null;
 	}, { passive: true });
 	
+	// Use ResizeObserver to ensure width stays synced if content size changes
+	const resizeObserver = new ResizeObserver(() => {
+		requestAnimationFrame(syncToggleWidth);
+	});
+	resizeObserver.observe(controlPanel);
+	
 	// Wait for both DOM and window load to ensure everything is rendered
 	function waitForFullLoad() {
 		if (document.readyState === 'complete') {
