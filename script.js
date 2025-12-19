@@ -430,6 +430,57 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
                         const taskData = getTaskData(task, feature.properties);
                         const tileLevelData = getTileLevelData(feature.properties);
                         showHoverPanel(e, taskData, tileLevelData);
+                    },
+                    touchstart: function(e) {
+                        if (map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
+                        
+                        e.originalEvent.preventDefault(); // Prevent default touch behavior
+                        cancelPendingHide();
+                        
+                        isTouchOverTile = true;
+                        const tile = e.target;
+                        const bounds = tile.getBounds();
+                        hoveredTileBounds = bounds;
+                        isHovering = true;
+                        const taskData = getTaskData(task, feature.properties);
+                        const tileLevelData = getTileLevelData(feature.properties);
+                        showHoverPanel(e, taskData, tileLevelData);
+                    },
+                    touchmove: function(e) {
+                        if (map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
+                        
+                        // Allow scrolling if touch is moving on tile or panel
+                        if (isTouchOverPanel || isTouchOverTile) {
+                            // Don't prevent default - let the panel handle scrolling
+                            return;
+                        }
+                    },
+                    touchend: function(e) {
+                        isTouchOverTile = false;
+                        
+                        // Check if touch ended outside tile and panel
+                        if (hoveredTileBounds && e.originalEvent.changedTouches.length > 0) {
+                            const touch = e.originalEvent.changedTouches[0];
+                            const mapContainer = map.getContainer();
+                            const rect = mapContainer.getBoundingClientRect();
+                            const x = touch.clientX - rect.left;
+                            const y = touch.clientY - rect.top;
+                            const touchLatLng = map.containerPointToLatLng(L.point(x, y));
+                            
+                            if (!hoveredTileBounds.contains(touchLatLng) && !isTouchOverPanel) {
+                                // Touch ended outside tile and panel, hide after a short delay
+                                if (!hideTimeout) {
+                                    hideTimeout = setTimeout(() => {
+                                        if (!isTouchOverPanel && !isTouchOverTile) {
+                                            hideHoverPanel();
+                                            hoveredTileBounds = null;
+                                            isHovering = false;
+                                        }
+                                        hideTimeout = null;
+                                    }, 150);
+                                }
+                            }
+                        }
                     }
                 });
             }
@@ -641,6 +692,9 @@ let isHovering = false;
 let lastMouseLatLng = null;
 let hideTimeout = null; // Timeout for delayed hide
 let isMouseOverPanel = false; // Track if mouse is over the hover panel
+let isTouchOverPanel = false; // Track if touch is over the hover panel
+let isTouchOverTile = false; // Track if touch is over a tile
+let touchStartY = null; // Track touch start position for scrolling
 
 // Helper function to cancel any pending hide timeout
 function cancelPendingHide() {
@@ -649,6 +703,36 @@ function cancelPendingHide() {
 		hideTimeout = null;
 	}
 }
+
+// Handle touch events on the map to detect touches outside tile/panel
+map.on('touchstart', function(e) {
+	// Only handle if zoom level is >= PIXEL_LEVEL_ZOOM_THRESHOLD
+	if (map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
+	
+	const touch = e.originalEvent.touches[0];
+	if (!touch) return;
+	
+	const mapContainer = map.getContainer();
+	const rect = mapContainer.getBoundingClientRect();
+	const x = touch.clientX - rect.left;
+	const y = touch.clientY - rect.top;
+	const touchLatLng = map.containerPointToLatLng(L.point(x, y));
+	
+	// Check if touch is outside any tile and outside the panel
+	if (hoveredTileBounds && !hoveredTileBounds.contains(touchLatLng) && !isTouchOverPanel) {
+		// Touch is outside tile and panel, hide the panel
+		if (!hideTimeout) {
+			hideTimeout = setTimeout(() => {
+				if (!isTouchOverPanel && !isTouchOverTile) {
+					hideHoverPanel();
+					hoveredTileBounds = null;
+					isHovering = false;
+				}
+				hideTimeout = null;
+			}, 150);
+		}
+	}
+});
 
 map.on('mousemove', function(e) { // whenever the mouse moves
 	const zoom = map.getZoom();
@@ -736,6 +820,23 @@ function preventControlPanelOverlap() {
 			bottomBoundary = Math.min(bottomBoundary, attributionTopRelativeToMap - 10); // 10px buffer above attribution
 		}
 	}
+	
+	// Check if any legend is visible and adjust bottom boundary
+	const visibleLegends = document.querySelectorAll('.legend');
+	visibleLegends.forEach(legend => {
+		if (legend.style.display !== 'none' && legend.offsetParent !== null) {
+			const legendRect = legend.getBoundingClientRect();
+			// Calculate legend's top position relative to map
+			const legendTopRelativeToMap = legendRect.top - mapRect.top;
+			// If legend is visible and below the control panel
+			if (legendTopRelativeToMap > panelTop) {
+				// Use the legend's top as the boundary (with buffer)
+				const legendBoundary = legendTopRelativeToMap - 10; // 10px buffer above legend
+				// Use the smaller boundary (legend top, attribution top, or map bottom)
+				bottomBoundary = Math.min(bottomBoundary, legendBoundary);
+			}
+		}
+	});
 	
 	// Calculate available height from panel top to boundary
 	const availableHeight = bottomBoundary - panelTop;
@@ -972,6 +1073,13 @@ document.querySelectorAll('input[name="pixel-level-modalities"]').forEach(radio 
 	} else if (selectedBackground === 'ETH_GCH') {
 		ethGchLegend.style.display = 'block';
 	}
+	
+	// Update control panel height if visible (to account for legend changes)
+	if (controlPanel && controlPanel.classList.contains('visible')) {
+		requestAnimationFrame(() => {
+			preventControlPanelOverlap();
+		});
+	}
 
 	for (const task of checkedTasks) {
 		showVisibleTiles(task, selectedBackground, true); // force update
@@ -995,6 +1103,51 @@ hoverPanel.addEventListener('wheel', function(e) {
     e.preventDefault();
     e.stopPropagation();
 }, { passive: false });
+
+// Touch event handlers for hover panel
+hoverPanel.addEventListener('touchstart', function(e) {
+    isTouchOverPanel = true;
+    cancelPendingHide();
+    touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+hoverPanel.addEventListener('touchmove', function(e) {
+    if (touchStartY !== null && e.touches.length === 1) {
+        const deltaY = touchStartY - e.touches[0].clientY;
+        hoverPanel.scrollTop += deltaY;
+        touchStartY = e.touches[0].clientY;
+        e.preventDefault(); // Prevent map panning when scrolling panel
+    }
+}, { passive: false });
+
+hoverPanel.addEventListener('touchend', function(e) {
+    isTouchOverPanel = false;
+    touchStartY = null;
+    
+    // Check if touch is still over the tile, if not, hide the panel
+    if (hoveredTileBounds && e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        const mapContainer = map.getContainer();
+        const rect = mapContainer.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const touchLatLng = map.containerPointToLatLng(L.point(x, y));
+        
+        if (!hoveredTileBounds.contains(touchLatLng)) {
+            // Touch ended outside tile and panel, hide after a short delay
+            if (!hideTimeout) {
+                hideTimeout = setTimeout(() => {
+                    if (!isTouchOverPanel && !isTouchOverTile) {
+                        hideHoverPanel();
+                        hoveredTileBounds = null;
+                        isHovering = false;
+                    }
+                    hideTimeout = null;
+                }, 150);
+            }
+        }
+    }
+}, { passive: true });
 
 hoverPanel.addEventListener('mouseleave', function () {
     map.scrollWheelZoom.enable(); // enables scroll zoom on the map
@@ -1044,6 +1197,18 @@ biomassValuesCheckbox.addEventListener('change', function () {
 		if (layers['biomass']) {
 			showVisibleTiles('biomass', selectedBackground, true);
 		}
+		// Update control panel height if visible (to account for legend changes)
+		if (controlPanel && controlPanel.classList.contains('visible')) {
+			requestAnimationFrame(() => {
+				preventControlPanelOverlap();
+			});
+		}
+		// Update control panel height if visible (to account for legend changes)
+		if (controlPanel && controlPanel.classList.contains('visible')) {
+			requestAnimationFrame(() => {
+				preventControlPanelOverlap();
+			});
+		}
 	} else {
 		biomassLegend.style.display = 'none';
 		
@@ -1053,6 +1218,12 @@ biomassValuesCheckbox.addEventListener('change', function () {
 				map.removeLayer(overlay);
 			});
 			layers['biomass']['biomassImageOverlays'] = [];
+		}
+		// Update control panel height if visible (to account for legend changes)
+		if (controlPanel && controlPanel.classList.contains('visible')) {
+			requestAnimationFrame(() => {
+				preventControlPanelOverlap();
+			});
 		}
 		// Refresh biomass tiles to restore solid color
 		if (layers['biomass']) {
