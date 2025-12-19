@@ -449,11 +449,13 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
                     touchmove: function(e) {
                         if (map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
                         
-                        // Allow scrolling if touch is moving on tile or panel
-                        if (isTouchOverPanel || isTouchOverTile) {
-                            // Don't prevent default - let the panel handle scrolling
+                        // If touch is moving on panel, prevent tile panning
+                        if (isTouchOverPanel) {
+                            e.originalEvent.preventDefault();
+                            e.originalEvent.stopPropagation();
                             return;
                         }
+                        // If touch is moving on tile, allow normal behavior (but panel scrolling will be handled by panel)
                     },
                     touchend: function(e) {
                         isTouchOverTile = false;
@@ -694,7 +696,8 @@ let hideTimeout = null; // Timeout for delayed hide
 let isMouseOverPanel = false; // Track if mouse is over the hover panel
 let isTouchOverPanel = false; // Track if touch is over the hover panel
 let isTouchOverTile = false; // Track if touch is over a tile
-let touchStartY = null; // Track touch start position for scrolling
+let touchStartY = null; // Track touch start position for scrolling (hover panel)
+let controlPanelTouchStartY = null; // Track touch start position for scrolling (control panel)
 
 // Helper function to cancel any pending hide timeout
 function cancelPendingHide() {
@@ -964,6 +967,26 @@ if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
 		}
 	}, { passive: false });
 	
+	// Touch event handlers for control panel scrolling
+	controlPanel.addEventListener('touchstart', function(e) {
+		if (controlPanel.classList.contains('scrollable')) {
+			controlPanelTouchStartY = e.touches[0].clientY;
+		}
+	}, { passive: true });
+	
+	controlPanel.addEventListener('touchmove', function(e) {
+		if (controlPanel.classList.contains('scrollable') && controlPanelTouchStartY !== null && e.touches.length === 1) {
+			const deltaY = controlPanelTouchStartY - e.touches[0].clientY;
+			controlPanel.scrollTop += deltaY;
+			controlPanelTouchStartY = e.touches[0].clientY;
+			e.preventDefault(); // Prevent map panning when scrolling panel
+		}
+	}, { passive: false });
+	
+	controlPanel.addEventListener('touchend', function(e) {
+		controlPanelTouchStartY = null;
+	}, { passive: true });
+	
 	// Wait for both DOM and window load to ensure everything is rendered
 	function waitForFullLoad() {
 		if (document.readyState === 'complete') {
@@ -1108,15 +1131,21 @@ hoverPanel.addEventListener('wheel', function(e) {
 hoverPanel.addEventListener('touchstart', function(e) {
     isTouchOverPanel = true;
     cancelPendingHide();
-    touchStartY = e.touches[0].clientY;
-}, { passive: true });
+    if (e.touches.length > 0) {
+        touchStartY = e.touches[0].clientY;
+        // Prevent map panning when touching the panel
+        e.stopPropagation();
+    }
+}, { passive: false });
 
 hoverPanel.addEventListener('touchmove', function(e) {
     if (touchStartY !== null && e.touches.length === 1) {
         const deltaY = touchStartY - e.touches[0].clientY;
         hoverPanel.scrollTop += deltaY;
         touchStartY = e.touches[0].clientY;
-        e.preventDefault(); // Prevent map panning when scrolling panel
+        // Prevent map panning when scrolling panel
+        e.preventDefault();
+        e.stopPropagation();
     }
 }, { passive: false });
 
