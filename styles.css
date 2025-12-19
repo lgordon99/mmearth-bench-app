@@ -104,21 +104,87 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+#control-panel-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    display: flex;
+    gap: 0;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    box-shadow: none;
+    overflow: hidden;
+    width: fit-content;
+    box-sizing: border-box;
+}
+
+#control-panel-toggle .toggle-btn {
+    background: transparent;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    font-family: livvic;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 6px 5px;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    flex: 1;
+    text-align: center;
+}
+
+#control-panel-toggle .toggle-btn:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 0;
+}
+
+#control-panel-toggle .toggle-btn:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 0;
+}
+
+#control-panel-toggle .toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#control-panel-toggle .toggle-btn.active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 #control-panel {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 5px;
-    border-radius: 12px;
+    border-top: none;
+    padding: 0 5px;
+    border-radius: 0 0 12px 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     font-family: livvic;
     font-size: 11px;
     position: absolute;
-    top: 10px;          /* Distance from the top edge */
-    right: 10px;        /* Distance from the right edge */
+    top: 10px;          /* Same top as toggle */
+    right: 10px;        /* Same right as toggle */
     z-index: 1000;      /* Ensure it stays above other map layers */
     font-weight: bold;
+    width: fit-content;
+    box-sizing: border-box;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s ease-in-out, opacity 0.2s ease-in-out 0.1s, padding-top 0.4s ease-in-out, padding-bottom 0.4s ease-in-out;
+}
+
+#control-panel.visible {
+    max-height: 1000px; /* Large enough to accommodate content */
+    opacity: 1;
+    padding: 5px;
+    transition: max-height 0.4s ease-in-out, opacity 0.2s ease-in-out, padding-top 0.4s ease-in-out, padding-bottom 0.4s ease-in-out;
 }
 
 #control-panel p {

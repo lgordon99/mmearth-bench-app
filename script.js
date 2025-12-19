@@ -701,6 +701,107 @@ document.getElementById("clear").addEventListener("click", function() {
 	Esri_WorldImagery.remove();
 });
 
+// Control panel toggle
+const showMenuBtn = document.getElementById('show-menu-btn');
+const hideMenuBtn = document.getElementById('hide-menu-btn');
+const controlPanel = document.getElementById('control-panel');
+const controlPanelToggle = document.getElementById('control-panel-toggle');
+
+// Function to sync toggle width with control panel and position control panel below toggle
+function syncToggleWidth() {
+	if (controlPanelToggle && controlPanel) {
+		// Temporarily make control panel visible to measure width if it's hidden
+		const wasHidden = !controlPanel.classList.contains('visible');
+		if (wasHidden) {
+			controlPanel.style.visibility = 'hidden';
+			controlPanel.style.maxHeight = 'none';
+			controlPanel.style.opacity = '1';
+		}
+		
+		// Get control panel width
+		const panelWidth = controlPanel.offsetWidth;
+		// Set toggle width to match
+		controlPanelToggle.style.width = panelWidth + 'px';
+		// Position control panel directly below toggle
+		const toggleHeight = controlPanelToggle.offsetHeight;
+		controlPanel.style.top = (10 + toggleHeight) + 'px';
+		
+		// Restore hidden state if it was hidden
+		if (wasHidden) {
+			controlPanel.style.visibility = '';
+			controlPanel.style.maxHeight = '';
+			controlPanel.style.opacity = '';
+		}
+	}
+}
+
+if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
+	// Sync width and position after DOM is ready
+	function initToggleWidth() {
+		// Use requestAnimationFrame to ensure layout is calculated
+		requestAnimationFrame(() => {
+			syncToggleWidth();
+		});
+	}
+	
+	// Initialize on load
+	function initializeControlPanel() {
+		// First, sync width before applying any animation classes
+		// Temporarily remove animation classes to measure natural width
+		controlPanel.style.transition = 'none';
+		controlPanel.style.maxHeight = 'none';
+		controlPanel.style.opacity = '1';
+		controlPanel.style.visibility = 'visible';
+		
+		// Use double requestAnimationFrame to ensure layout is calculated
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				syncToggleWidth();
+				
+				// Now restore transitions and set initial state
+				controlPanel.style.transition = '';
+				controlPanel.style.visibility = '';
+				controlPanel.style.maxHeight = '';
+				controlPanel.style.opacity = '';
+				
+				// Set initial state based on which button is active
+				if (showMenuBtn.classList.contains('active')) {
+					controlPanel.classList.add('visible');
+				} else {
+					// Ensure it starts hidden if hide is active
+					controlPanel.classList.remove('visible');
+				}
+			});
+		});
+	}
+	
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initializeControlPanel);
+	} else {
+		initializeControlPanel();
+	}
+	
+	// Sync on window resize
+	window.addEventListener('resize', syncToggleWidth);
+	
+	// Sync width after control panel is shown
+	showMenuBtn.addEventListener('click', function() {
+		controlPanel.classList.add('visible');
+		showMenuBtn.classList.add('active');
+		hideMenuBtn.classList.remove('active');
+		// Sync width and position after display change
+		requestAnimationFrame(() => {
+			syncToggleWidth();
+		});
+	});
+	
+	hideMenuBtn.addEventListener('click', function() {
+		controlPanel.classList.remove('visible');
+		hideMenuBtn.classList.add('active');
+		showMenuBtn.classList.remove('active');
+	});
+}
+
 // task buttons clicked
 for (const task of Object.keys(tasks)) {
 	document.getElementById(task).addEventListener("change", async function(e) {
