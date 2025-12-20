@@ -184,6 +184,19 @@ function preventHoverPanelSpill() {
 	
 	// Check if any legend is visible and calculate available space above it
 	let bottomBoundary = Math.min(mapRect.bottom, viewportHeight) - 20;
+	
+	// Find Leaflet attribution control (typically at bottom-right)
+	const attributionControl = document.querySelector('.leaflet-control-attribution');
+	if (attributionControl && attributionControl.offsetParent !== null) {
+		const attributionRect = attributionControl.getBoundingClientRect();
+		const attributionTopRelativeToMap = attributionRect.top - mapRect.top;
+		// If attribution is below the hover panel, use it as boundary
+		if (attributionTopRelativeToMap > currentTop) {
+			const attributionBoundary = attributionTopRelativeToMap - 10; // 10px buffer above attribution
+			bottomBoundary = Math.min(bottomBoundary, attributionBoundary);
+		}
+	}
+	
 	const visibleLegends = document.querySelectorAll('.legend');
 	visibleLegends.forEach(legend => {
 		if (legend.style.display !== 'none' && legend.offsetParent !== null) {
@@ -712,8 +725,24 @@ map.on('touchstart', function(e) {
 	// Only handle if zoom level is >= PIXEL_LEVEL_ZOOM_THRESHOLD
 	if (map.getZoom() < PIXEL_LEVEL_ZOOM_THRESHOLD) return;
 	
+	// Only handle if hover panel is visible
+	if (hoverPanel.style.display === 'none' || !hoveredTileBounds) return;
+	
 	const touch = e.originalEvent.touches[0];
 	if (!touch) return;
+	
+	// Check if touch is within the hover panel element
+	const hoverPanelRect = hoverPanel.getBoundingClientRect();
+	const isTouchInPanel = hoverPanel.style.display !== 'none' &&
+	                       touch.clientX >= hoverPanelRect.left && 
+	                       touch.clientX <= hoverPanelRect.right &&
+	                       touch.clientY >= hoverPanelRect.top && 
+	                       touch.clientY <= hoverPanelRect.bottom;
+	
+	// If touch is in panel, don't hide
+	if (isTouchInPanel) {
+		return;
+	}
 	
 	const mapContainer = map.getContainer();
 	const rect = mapContainer.getBoundingClientRect();
@@ -722,18 +751,12 @@ map.on('touchstart', function(e) {
 	const touchLatLng = map.containerPointToLatLng(L.point(x, y));
 	
 	// Check if touch is outside any tile and outside the panel
-	if (hoveredTileBounds && !hoveredTileBounds.contains(touchLatLng) && !isTouchOverPanel) {
-		// Touch is outside tile and panel, hide the panel
-		if (!hideTimeout) {
-			hideTimeout = setTimeout(() => {
-				if (!isTouchOverPanel && !isTouchOverTile) {
-					hideHoverPanel();
-					hoveredTileBounds = null;
-					isHovering = false;
-				}
-				hideTimeout = null;
-			}, 150);
-		}
+	if (!hoveredTileBounds.contains(touchLatLng)) {
+		// Touch is outside tile and panel, hide immediately
+		hideHoverPanel();
+		hoveredTileBounds = null;
+		isHovering = false;
+		cancelPendingHide();
 	}
 });
 
