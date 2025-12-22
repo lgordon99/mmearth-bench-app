@@ -813,8 +813,7 @@ document.getElementById("clear").addEventListener("click", function() {
 });
 
 // Control panel toggle
-const showMenuBtn = document.getElementById('show-menu-btn');
-const hideMenuBtn = document.getElementById('hide-menu-btn');
+const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const controlPanel = document.getElementById('control-panel');
 const controlPanelToggle = document.getElementById('control-panel-toggle');
 
@@ -890,92 +889,22 @@ function preventControlPanelOverlap() {
 	}
 }
 
-function syncToggleWidth() {
-	if (controlPanelToggle && controlPanel) {
-		// Temporarily make control panel visible to measure width if it's hidden
-		const wasHidden = !controlPanel.classList.contains('visible');
-		if (wasHidden) {
-			controlPanel.style.visibility = 'hidden';
-			controlPanel.style.maxHeight = 'none';
-			controlPanel.style.opacity = '1';
-			controlPanel.style.display = 'block';
-		}
-		
-		// Force a layout recalculation by reading offsetWidth
-		controlPanel.offsetWidth;
-		
-		// Get control panel width (including padding and border due to box-sizing: border-box)
-		const panelWidth = controlPanel.offsetWidth;
-		
-		// Set toggle width to match (only if we got a valid width)
-		if (panelWidth > 0) {
-			controlPanelToggle.style.width = panelWidth + 'px';
-		}
-		
-		// Position control panel directly below toggle
-		const toggleHeight = controlPanelToggle.offsetHeight;
-		controlPanel.style.top = (10 + toggleHeight) + 'px';
-		
-		// Restore hidden state if it was hidden
-		if (wasHidden) {
-			controlPanel.style.visibility = '';
-			controlPanel.style.maxHeight = '';
-			controlPanel.style.opacity = '';
-			controlPanel.style.display = '';
-		}
-	}
-}
+// Toggle and control panel are now independent, no width syncing needed
 
-if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
-	// Sync width and position after DOM is ready
-	function initToggleWidth() {
-		// Use requestAnimationFrame to ensure layout is calculated
-		requestAnimationFrame(() => {
-			syncToggleWidth();
-		});
-	}
-	
+if (menuToggleBtn && controlPanel && controlPanelToggle) {
 	// Initialize on load
 	function initializeControlPanel() {
-		// First, sync width before applying any animation classes
-		// Temporarily remove animation classes to measure natural width
-		controlPanel.style.transition = 'none';
-		controlPanel.style.maxHeight = 'none';
-		controlPanel.style.opacity = '1';
-		controlPanel.style.visibility = 'visible';
-		controlPanel.style.display = 'block'; // Ensure it's displayed for measurement
-		
-		// Force a layout recalculation by reading offsetWidth
-		controlPanel.offsetWidth;
-		
-		// Use multiple requestAnimationFrame calls to ensure layout is fully calculated
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				requestAnimationFrame(() => {
-					// Measure and sync width
-					syncToggleWidth();
-					
-					// Now restore transitions and set initial state
-					controlPanel.style.transition = '';
-					controlPanel.style.visibility = '';
-					controlPanel.style.maxHeight = '';
-					controlPanel.style.opacity = '';
-					
-					// Set initial state based on which button is active
-					if (showMenuBtn.classList.contains('active')) {
-						controlPanel.classList.add('visible');
-						// Check for overlap after a short delay to ensure layout is complete
-						setTimeout(() => {
-							preventControlPanelOverlap();
-						}, 450);
-					} else {
-						// Ensure it starts hidden if hide is active
-						controlPanel.style.display = 'none';
-						controlPanel.classList.remove('visible');
-					}
-				});
-			});
-		});
+		// Set initial state: panel visible by default
+		controlPanel.classList.add('visible');
+		menuToggleBtn.classList.remove('hidden');
+		const eyeOpen = menuToggleBtn.querySelector('.eye-open');
+		const eyeClosed = menuToggleBtn.querySelector('.eye-closed');
+		if (eyeOpen) eyeOpen.style.display = 'block';
+		if (eyeClosed) eyeClosed.style.display = 'none';
+		// Check for overlap after a short delay to ensure layout is complete
+		setTimeout(() => {
+			preventControlPanelOverlap();
+		}, 450);
 	}
 	
 	// Allow scrolling within the control panel when it's scrollable
@@ -1010,11 +939,7 @@ if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
 		controlPanelTouchStartY = null;
 	}, { passive: true });
 	
-	// Use ResizeObserver to ensure width stays synced if content size changes
-	const resizeObserver = new ResizeObserver(() => {
-		requestAnimationFrame(syncToggleWidth);
-	});
-	resizeObserver.observe(controlPanel);
+	// ResizeObserver no longer needed since toggle and panel are independent
 	
 	// Wait for both DOM and window load to ensure everything is rendered
 	function waitForFullLoad() {
@@ -1036,31 +961,38 @@ if (showMenuBtn && hideMenuBtn && controlPanel && controlPanelToggle) {
 	
 	// Sync on window resize
 	window.addEventListener('resize', () => {
-		syncToggleWidth();
 		if (controlPanel.classList.contains('visible')) {
 			preventControlPanelOverlap();
 		}
 	});
 	
-	// Sync width after control panel is shown
-	showMenuBtn.addEventListener('click', function() {
-		controlPanel.classList.add('visible');
-		showMenuBtn.classList.add('active');
-		hideMenuBtn.classList.remove('active');
-		// Sync width and position after display change
-		requestAnimationFrame(() => {
-			syncToggleWidth();
-			// Check for overlap after animation completes
-			setTimeout(() => {
-				preventControlPanelOverlap();
-			}, 450); // Slightly longer than animation duration (400ms)
-		});
-	});
+	// Get the eye icon elements
+	const eyeOpen = menuToggleBtn.querySelector('.eye-open');
+	const eyeClosed = menuToggleBtn.querySelector('.eye-closed');
 	
-	hideMenuBtn.addEventListener('click', function() {
-		controlPanel.classList.remove('visible');
-		hideMenuBtn.classList.add('active');
-		showMenuBtn.classList.remove('active');
+	// Toggle control panel visibility on button click
+	menuToggleBtn.addEventListener('click', function() {
+		const isVisible = controlPanel.classList.contains('visible');
+		
+		if (isVisible) {
+			// Hide the panel
+			controlPanel.classList.remove('visible');
+			menuToggleBtn.classList.add('hidden');
+			if (eyeOpen) eyeOpen.style.display = 'none';
+			if (eyeClosed) eyeClosed.style.display = 'block';
+		} else {
+			// Show the panel
+			controlPanel.classList.add('visible');
+			menuToggleBtn.classList.remove('hidden');
+			if (eyeOpen) eyeOpen.style.display = 'block';
+			if (eyeClosed) eyeClosed.style.display = 'none';
+			// Check for overlap after animation completes
+			requestAnimationFrame(() => {
+				setTimeout(() => {
+					preventControlPanelOverlap();
+				}, 450); // Slightly longer than animation duration (400ms)
+			});
+		}
 	});
 }
 

@@ -109,52 +109,41 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    z-index: 1001;
-    display: flex;
-    gap: 0;
+    z-index: 1002;
+    width: fit-content;
+}
+
+#control-panel-toggle .menu-btn {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-bottom: none;
-    border-radius: 12px 12px 0 0;
-    box-shadow: none;
-    overflow: hidden;
-    width: fit-content;
-    box-sizing: border-box;
-}
-
-#control-panel-toggle .toggle-btn {
-    background: transparent;
-    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     color: #333;
     cursor: pointer;
     font-family: livvic;
     font-size: 11px;
     font-weight: bold;
-    padding: 6px 5px;
+    padding: 6px 12px;
     transition: all 0.2s ease;
-    border-radius: 0;
-    flex: 1;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-#control-panel-toggle .toggle-btn:first-child {
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 0;
+#control-panel-toggle .menu-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
 }
 
-#control-panel-toggle .toggle-btn:last-child {
-    border-top-right-radius: 12px;
-    border-bottom-left-radius: 0;
+#control-panel-toggle .menu-btn .eye-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
 }
 
-#control-panel-toggle .toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-#control-panel-toggle .toggle-btn.active {
-    background: rgba(255, 255, 255, 0.3);
+#control-panel-toggle .menu-btn .eye-icon svg {
+    display: block;
 }
 
 #control-panel {
@@ -162,16 +151,15 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-top: none;
     padding: 0 5px;
-    border-radius: 0 0 12px 12px;
+    border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
     font-family: livvic;
     font-size: 11px;
     position: absolute;
-    top: 10px;          /* Same top as toggle */
-    right: 10px;        /* Same right as toggle */
-    z-index: 1000;      /* Ensure it stays above other map layers */
+    top: 50px;          /* Position below the toggle button */
+    right: 10px;
+    z-index: 1001;      /* Ensure it stays above other map layers but below toggle */
     font-weight: bold;
     width: fit-content;
     box-sizing: border-box;
