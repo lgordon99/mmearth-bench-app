@@ -996,12 +996,15 @@ if (menuToggleBtn && controlPanel && controlPanelToggle) {
 	});
 }
 
-// Fullscreen toggle functionality - expands map to full browser width
+// Fullscreen toggle functionality - expands map to full container width (browser or iframe)
 const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-btn');
 const mapElement = document.getElementById('map');
 if (fullscreenToggleBtn && mapElement) {
 	const fullscreenSvg = fullscreenToggleBtn.querySelector('.fullscreen-svg');
 	const minimizeSvg = fullscreenToggleBtn.querySelector('.minimize-svg');
+	
+	// Check if we're in an iframe
+	const isInIframe = window.self !== window.top;
 	
 	// Function to update icon based on map width state
 	function updateFullscreenIcon() {
@@ -1016,6 +1019,16 @@ if (fullscreenToggleBtn && mapElement) {
 		}
 	}
 	
+	// Function to send message to parent page (if in iframe)
+	function notifyParent(action) {
+		if (isInIframe && window.parent) {
+			window.parent.postMessage({
+				type: 'mmearth-map-fullscreen',
+				action: action // 'enter' or 'exit'
+			}, '*'); // Use '*' for any origin, or specify the parent's origin for security
+		}
+	}
+	
 	// Toggle map width on button click
 	fullscreenToggleBtn.addEventListener('click', function() {
 		const isFullscreen = mapElement.classList.contains('fullscreen-width');
@@ -1023,9 +1036,13 @@ if (fullscreenToggleBtn && mapElement) {
 		if (isFullscreen) {
 			// Exit fullscreen width - restore original width
 			mapElement.classList.remove('fullscreen-width');
+			// Notify parent page to restore iframe size
+			notifyParent('exit');
 		} else {
 			// Enter fullscreen width - expand to 100%
 			mapElement.classList.add('fullscreen-width');
+			// Notify parent page to expand iframe to full width
+			notifyParent('enter');
 		}
 		
 		// Update icon
