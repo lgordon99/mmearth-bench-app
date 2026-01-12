@@ -41,7 +41,7 @@ const tasks = {'biomass': {'title': 'Biomass', 'color': 'green'},
                'soil_nitrogen': {'title': 'Soil nitrogen', 'color': 'blue'},
 			   'soil_organic_carbon': {'title': 'Soil organic carbon', 'color': 'brown'},
 			   'soil_pH': {'title': 'Soil pH', 'color': 'purple'},
-               'species': {'title': 'Species', 'color': 'red'}};
+               'species': {'title': 'Species', 'color': 'mediumvioletred'}};
 const layers = Object.fromEntries(Object.keys(tasks).map(task => [task, {}]));
 const viewportHeight = window.innerHeight;
 const zoomInstruction = document.getElementById('zoom-instruction');

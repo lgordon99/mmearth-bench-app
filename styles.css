@@ -92,7 +92,7 @@ body {
         blue 72deg 144deg,
         brown 144deg 216deg,
         purple 216deg 288deg,
-        red 288deg 360deg
+        mediumvioletred 288deg 360deg
     );
     mask: radial-gradient(circle, transparent 38%, black 40%);
     -webkit-mask: radial-gradient(circle, transparent 38%, black 40%);
@@ -285,7 +285,7 @@ body {
 }
 
 #species-label {
-    color: red;
+    color: mediumvioletred;
 }
 
 #soil_nitrogen-label {
