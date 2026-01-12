@@ -8,6 +8,12 @@ body {
     height: 700px;
     border-radius: 12px;
     margin: 0 auto;
+    transition: width 0.3s ease;
+}
+
+#map.fullscreen-width {
+    width: 100%;
+    border-radius: 0;
     transform: translateZ(0); /* Force GPU acceleration */
     will-change: transform; /* Hint browser about upcoming changes */
     backface-visibility: hidden; /* Improve rendering performance */
@@ -111,6 +117,8 @@ body {
     right: 10px;
     z-index: 1002;
     width: fit-content;
+    display: flex;
+    gap: 8px;
 }
 
 #control-panel-toggle .menu-btn {
@@ -144,6 +152,40 @@ body {
 
 #control-panel-toggle .menu-btn .eye-icon svg {
     display: block;
+}
+
+#control-panel-toggle .fullscreen-btn {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+    color: #333;
+    cursor: pointer;
+    padding: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+#control-panel-toggle .fullscreen-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+#control-panel-toggle .fullscreen-btn .fullscreen-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#control-panel-toggle .fullscreen-btn .fullscreen-icon svg {
+    display: block;
+    width: 16px;
+    height: 16px;
 }
 
 #control-panel {

@@ -899,8 +899,8 @@ if (menuToggleBtn && controlPanel && controlPanelToggle) {
 		menuToggleBtn.classList.remove('hidden');
 		const eyeOpen = menuToggleBtn.querySelector('.eye-open');
 		const eyeClosed = menuToggleBtn.querySelector('.eye-closed');
-		if (eyeOpen) eyeOpen.style.display = 'block';
-		if (eyeClosed) eyeClosed.style.display = 'none';
+		if (eyeOpen) eyeOpen.style.display = 'none';
+		if (eyeClosed) eyeClosed.style.display = 'block';
 		// Check for overlap after a short delay to ensure layout is complete
 		setTimeout(() => {
 			preventControlPanelOverlap();
@@ -978,14 +978,14 @@ if (menuToggleBtn && controlPanel && controlPanelToggle) {
 			// Hide the panel
 			controlPanel.classList.remove('visible');
 			menuToggleBtn.classList.add('hidden');
-			if (eyeOpen) eyeOpen.style.display = 'none';
-			if (eyeClosed) eyeClosed.style.display = 'block';
+			if (eyeOpen) eyeOpen.style.display = 'block';
+			if (eyeClosed) eyeClosed.style.display = 'none';
 		} else {
 			// Show the panel
 			controlPanel.classList.add('visible');
 			menuToggleBtn.classList.remove('hidden');
-			if (eyeOpen) eyeOpen.style.display = 'block';
-			if (eyeClosed) eyeClosed.style.display = 'none';
+			if (eyeOpen) eyeOpen.style.display = 'none';
+			if (eyeClosed) eyeClosed.style.display = 'block';
 			// Check for overlap after animation completes
 			requestAnimationFrame(() => {
 				setTimeout(() => {
@@ -994,6 +994,51 @@ if (menuToggleBtn && controlPanel && controlPanelToggle) {
 			});
 		}
 	});
+}
+
+// Fullscreen toggle functionality - expands map to full browser width
+const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-btn');
+const mapElement = document.getElementById('map');
+if (fullscreenToggleBtn && mapElement) {
+	const fullscreenSvg = fullscreenToggleBtn.querySelector('.fullscreen-svg');
+	const minimizeSvg = fullscreenToggleBtn.querySelector('.minimize-svg');
+	
+	// Function to update icon based on map width state
+	function updateFullscreenIcon() {
+		if (mapElement.classList.contains('fullscreen-width')) {
+			// In fullscreen width mode - show minimize icon
+			if (fullscreenSvg) fullscreenSvg.style.display = 'none';
+			if (minimizeSvg) minimizeSvg.style.display = 'block';
+		} else {
+			// Not in fullscreen width mode - show fullscreen icon
+			if (fullscreenSvg) fullscreenSvg.style.display = 'block';
+			if (minimizeSvg) minimizeSvg.style.display = 'none';
+		}
+	}
+	
+	// Toggle map width on button click
+	fullscreenToggleBtn.addEventListener('click', function() {
+		const isFullscreen = mapElement.classList.contains('fullscreen-width');
+		
+		if (isFullscreen) {
+			// Exit fullscreen width - restore original width
+			mapElement.classList.remove('fullscreen-width');
+		} else {
+			// Enter fullscreen width - expand to 100%
+			mapElement.classList.add('fullscreen-width');
+		}
+		
+		// Update icon
+		updateFullscreenIcon();
+		
+		// Invalidate map size after transition to ensure Leaflet recalculates properly
+		setTimeout(() => {
+			map.invalidateSize();
+		}, 300); // Wait for CSS transition to complete
+	});
+	
+	// Set initial icon state
+	updateFullscreenIcon();
 }
 
 // task buttons clicked
