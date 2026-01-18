@@ -162,7 +162,7 @@ function updateBiomassOverlays() {
 	layers['biomass']['biomassImageOverlays'] = [];
 	
 	visibleTiles.forEach(tile => {
-		const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/biomass/png_tiles/biomass/tile_${tile.properties.ID}_biomass.png`;
+		const imageURL = `https://mmearth-bench-explorer.luciagordon.workers.dev/biomass/png_tiles/biomass/tile_${tile.properties.ID}_biomass.png`;
 		const bounds = L.geoJson(tile).getBounds();
 		const imageOverlay = L.imageOverlay(imageURL, bounds, {opacity: 0.9, interactive: false, crossOrigin: true});
 		imageOverlay.addTo(map);
@@ -286,12 +286,12 @@ function getSelectedSplitIndices(task) {
 }
 
 async function loadTaskLayers(task) {
-	const response = await fetch(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/${task}_map_gdf.geojson`);
+	const response = await fetch(`https://mmearth-bench-explorer.luciagordon.workers.dev/${task}/${task}_map_gdf.geojson`);
 	const data = await response.json();
 	const color = tasks[task]['color'];
 
 	// Load split data
-	const splitResponse = await fetch(`https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/${task}_split_data.json`);
+	const splitResponse = await fetch(`https://mmearth-bench-explorer.luciagordon.workers.dev/${task}/${task}_split_data.json`);
 	const splitData = await splitResponse.json();
 
 	// Pre-calculate bounds for all tiles to avoid recalculating during panning
@@ -506,7 +506,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
         
         // Add pixel-level modality image overlay if needed
         if (selectedBackground !== 'solid' && zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
-            const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
+            const imageURL = `https://mmearth-bench-explorer.luciagordon.workers.dev/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
             const imageOverlay = L.imageOverlay(imageURL, bounds, {
                 opacity: 0.9,
                 interactive: false,
@@ -533,7 +533,7 @@ function showVisibleTiles(task, selectedBackground, forceUpdate=false) {
         if (selectedBackground !== 'solid' && zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
             visibleTiles.forEach(tileData => {
                 const tileID = tileData.feature.properties.ID;
-                const imageURL = `https://mmearth-bench-bucket-a1e1664c.s3.eu-west-1.amazonaws.com/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
+                const imageURL = `https://mmearth-bench-explorer.luciagordon.workers.dev/${task}/png_tiles/${selectedBackground}/tile_${tileID}_${selectedBackground}.png`;
                 const imageOverlay = L.imageOverlay(imageURL, tileData.bounds, {
                     opacity: 0.9,
                     interactive: false,
@@ -677,21 +677,17 @@ async function loadSpeciesLabels() {
 		return;
 	}
 	
-	try {
-		const response = await fetch('https://mmearth-bench-bucket-a1e1664c.s3.amazonaws.com/species/species_labels.json');
-		speciesLabels = await response.json();
-		
-		// Populate the dropdown with species in order
-		const speciesNames = Object.keys(speciesLabels);
-		speciesNames.forEach(speciesName => {
-			const option = document.createElement('option');
-			option.value = speciesName;
-			option.textContent = speciesName;
-			speciesSelect.appendChild(option);
-		});
-	} catch (error) {
-		console.error('Error loading species labels:', error);
-	}
+	const response = await fetch('https://mmearth-bench-explorer.luciagordon.workers.dev/species/species_labels.json');
+	speciesLabels = await response.json();
+	
+	// Populate the dropdown with species in order
+	const speciesNames = Object.keys(speciesLabels);
+	speciesNames.forEach(speciesName => {
+		const option = document.createElement('option');
+		option.value = speciesName;
+		option.textContent = speciesName;
+		speciesSelect.appendChild(option);
+	});
 }
 
 // Load species labels first, then load tasks
