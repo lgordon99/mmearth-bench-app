@@ -1384,11 +1384,19 @@ const throttledZoomUpdate = throttle(() => {
 	const zoom = map.getZoom();
 	const crossedThreshold = (previousZoom < PIXEL_LEVEL_ZOOM_THRESHOLD && zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) || (previousZoom >= PIXEL_LEVEL_ZOOM_THRESHOLD && zoom < PIXEL_LEVEL_ZOOM_THRESHOLD);
 	let forceUpdate = crossedThreshold;
+	const shouldRecomputeControlPanelHeight = crossedThreshold;
 	
 	// Show/hide pixel-level modalities based on zoom level
 	if (zoom >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
 		pixelLevelModalitiesContainer.style.display = 'block';
 		zoomInstruction.style.display = 'none';
+
+		// When pixel-level options appear, the control panel can grow; clamp its height
+		if (shouldRecomputeControlPanelHeight && controlPanel && controlPanel.classList.contains('visible')) {
+			requestAnimationFrame(() => {
+				preventControlPanelOverlap();
+			});
+		}
 		
 		// If we just zoomed back in and background was reset, force update
 		if (wasBackgroundReset) {
@@ -1404,6 +1412,13 @@ const throttledZoomUpdate = throttle(() => {
 		// Hide pixel-level modalities and hover panel below PIXEL_LEVEL_ZOOM_THRESHOLD
 		pixelLevelModalitiesContainer.style.display = 'none';
 		zoomInstruction.style.display = 'block';
+
+		// When pixel-level options disappear, recompute panel height (may remove scroll clamp)
+		if (shouldRecomputeControlPanelHeight && controlPanel && controlPanel.classList.contains('visible')) {
+			requestAnimationFrame(() => {
+				preventControlPanelOverlap();
+			});
+		}
 		
 		// Hide hover panel and reset state
 		hideHoverPanel();
@@ -1453,7 +1468,17 @@ updateZoomLevel();
 if (map.getZoom() >= PIXEL_LEVEL_ZOOM_THRESHOLD) {
 	pixelLevelModalitiesContainer.style.display = 'block';
 	zoomInstruction.style.display = 'none';
+	if (controlPanel && controlPanel.classList.contains('visible')) {
+		requestAnimationFrame(() => {
+			preventControlPanelOverlap();
+		});
+	}
 } else {
 	pixelLevelModalitiesContainer.style.display = 'none';
 	zoomInstruction.style.display = 'block';
+	if (controlPanel && controlPanel.classList.contains('visible')) {
+		requestAnimationFrame(() => {
+			preventControlPanelOverlap();
+		});
+	}
 }
